@@ -24,6 +24,18 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
           >
             Get Started
           </button>
+          <div className="mt-8">
+            <button
+              onClick={onGetStarted}
+              className="bg-transparent border-none p-0 cursor-pointer"
+            >
+              <img 
+                src="/assets/tclogo.png" 
+                alt="Theme Crew Logo" 
+                className="h-20 mx-auto opacity-75 hover:opacity-100 transition-opacity"
+              />
+            </button>
+          </div>
         </div>
       </div>
 
