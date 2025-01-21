@@ -507,7 +507,7 @@ const RideNow: React.FC = () => {
           </button>
         </div>
         {lastUpdated && (
-          <div className="text-gray-400 text-sm flex justify-between items-center">
+          <div className="text-gray-400 text-sm flex flex-col items-end gap-1">
             <span>Powered by Queue-Times.com</span>
             <span>Last updated: {lastUpdated}</span>
           </div>
