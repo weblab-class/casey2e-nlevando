@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Clock, ThumbsUp } from 'lucide-react';
+import { Clock, ThumbsUp, Map } from 'lucide-react';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -40,7 +40,7 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
             </div>
             <div className="text-center p-6">
               <div className="inline-block p-3 bg-blue-500/10 rounded-full mb-4">
-                <Compass className="h-8 w-8 text-blue-400" />
+                <Map className="h-8 w-8 text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">Smart Navigation</h3>
               <p className="text-gray-300">Get optimized routes based on your preferences</p>

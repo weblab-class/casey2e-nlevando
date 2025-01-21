@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { Compass, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { LogIn, LogOut, Menu, X } from 'lucide-react';
 import Landing from './pages/Landing';
 import RideNow from './pages/RideNow';
 import Login from './components/Login';
@@ -26,8 +26,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Compass className="h-8 w-8 text-blue-400" />
-              <span className="ml-2 text-xl font-bold text-white">ThrillCompass</span>
+              <img src="/assets/thrillcompasslogo.png" alt="ThrillCompass" className="h-16 w-auto" />
             </div>
             
             {/* Desktop Navigation */}
