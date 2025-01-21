@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart } from 'lucide-react';
+import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw } from 'lucide-react';
 
 interface Ride {
   id: number;
@@ -157,6 +157,48 @@ const RideNow: React.FC = () => {
   ]);
 
   const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  const updateWaitTimes = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/queue-times');
+      const data = await response.json();
+      
+      // Update the wait times in our lands data
+      setLands(prevLands => prevLands.map(land => ({
+        ...land,
+        rides: land.rides.map(ride => {
+          const updatedLand = data.lands.find((l: any) => 
+            l.name.toLowerCase().includes(land.name.toLowerCase())
+          );
+          
+          const updatedRide = updatedLand?.rides.find((r: any) => 
+            r.name.toLowerCase().includes(ride.name.toLowerCase())
+          );
+          
+          if (updatedRide) {
+            return {
+              ...ride,
+              waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
+            };
+          }
+          return ride;
+        })
+      })));
+
+      // Update timestamp
+      const now = new Date();
+      setLastUpdated(
+        `${now.toLocaleTimeString()} on ${now.toLocaleDateString()}`
+      );
+    } catch (error) {
+      console.error('Failed to fetch wait times:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRating = (rideId: number, rating: number) => {
     setLands(lands.map(land => ({
@@ -190,6 +232,27 @@ const RideNow: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 mb-8">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-white">Universal's Islands of Adventure</h1>
+          <button
+            onClick={updateWaitTimes}
+            disabled={isLoading}
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            Check Wait Times
+          </button>
+        </div>
+        {lastUpdated && (
+          <div className="text-gray-400 text-sm flex justify-between items-center">
+            <span>Powered by Queue-Times.com</span>
+            <span>Last updated: {lastUpdated}</span>
+          </div>
+        )}
+      </div>
+
       {/* Suggestion Section */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
