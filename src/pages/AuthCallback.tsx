@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const AuthCallback = () => {
       localStorage.setItem('authToken', token);
       
       // Fetch user profile
-      fetch('http://localhost:5000/api/user/profile', {
+      fetch(getApiUrl('/api/user/profile'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { LogIn, LogOut, Menu, X } from 'lucide-react';
+import { getApiUrl } from './config';
 import Landing from './pages/Landing';
 import RideNow from './pages/RideNow';
 import AuthModal from './components/AuthModal';
@@ -47,7 +48,7 @@ function App() {
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/user/profile', {
+      const response = await fetch(getApiUrl('/api/user/profile'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }

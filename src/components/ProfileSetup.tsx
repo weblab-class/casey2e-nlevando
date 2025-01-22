@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Frown, Meh, Smile, SmilePlus, Heart } from 'lucide-react';
+import { getApiUrl } from '../config';
 
 interface ProfileSetupProps {
   onClose: () => void;
@@ -77,7 +78,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
         rating: rating
       }));
 
-      const response = await fetch('http://localhost:5000/api/user/profile', {
+      const response = await fetch(getApiUrl('/api/user/profile'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
