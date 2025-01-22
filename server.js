@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,9 +50,14 @@ console.log('[SERVER] MongoDB URI:', config.mongodb.uri ? 'Present' : 'Missing')
 console.log('[SERVER] JWT Secret:', config.jwt.secret ? 'Present' : 'Missing');
 console.log('[SERVER] Google Client ID:', config.google.clientId ? 'Present' : 'Missing');
 
+// Serve static files from the React app first
+app.use(express.static(path.join(__dirname, 'dist')));
+
 // Middleware
 app.use(cors({
-  origin: config.clientUrl,
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://thrillcompass.onrender.com' 
+    : 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -194,6 +200,15 @@ app.get('/api/user/profile', verifyToken, async (req, res) => {
   }
 });
 
+// Move the catch-all route before MongoDB connection
+app.get('*', (req, res) => {
+  // Don't serve the frontend for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 // Connect to MongoDB with robust error handling
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 30000,
@@ -203,16 +218,14 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(async () => {
   console.log('Connected to MongoDB');
-  // Drop the username index if it exists
   try {
     await mongoose.connection.db.collection('users').dropIndex('username_1');
     console.log('Dropped username index');
   } catch (error) {
-    // Index might not exist, which is fine
     console.log('No username index to drop');
   }
-  // Only start the server after successful MongoDB connection
-  const PORT = process.env.PORT || 5000;
+  // Use the PORT from environment variable
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
