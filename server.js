@@ -17,10 +17,44 @@ dotenv.config();
 
 const app = express();
 
+// Environment configuration
+const config = {
+  nodeEnv: process.env.NODE_ENV || 'development',
+  port: parseInt(process.env.PORT) || 5000,
+  baseUrl: process.env.NODE_ENV === 'production' 
+    ? 'https://thrillcompass.onrender.com'
+    : 'http://localhost:5000',
+  clientUrl: process.env.NODE_ENV === 'production'
+    ? 'https://thrillcompass.onrender.com'
+    : 'http://localhost:3000',
+  mongodb: {
+    uri: process.env.MONGODB_URI
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL // Use the exact URL from environment variable
+  }
+};
+
+// Debug logging for configuration
+console.log('[SERVER] Environment:', config.nodeEnv);
+console.log('[SERVER] Base URL:', config.baseUrl);
+console.log('[SERVER] Client URL:', config.clientUrl);
+console.log('[SERVER] Google Callback URL:', config.google.callbackUrl);
+console.log('[SERVER] MongoDB URI:', config.mongodb.uri ? 'Present' : 'Missing');
+console.log('[SERVER] JWT Secret:', config.jwt.secret ? 'Present' : 'Missing');
+console.log('[SERVER] Google Client ID:', config.google.clientId ? 'Present' : 'Missing');
+
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: config.clientUrl,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(passport.initialize());
@@ -59,23 +93,23 @@ const User = mongoose.model('User', userSchema);
 
 // Passport Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    clientID: config.google.clientId,
+    clientSecret: config.google.clientSecret,
+    callbackURL: config.google.callbackUrl,
     passReqToCallback: true
   },
   async function(request, accessToken, refreshToken, profile, done) {
     try {
-      // Find or create user
+      console.log('[Google Auth] Processing profile:', profile.id);
       let user = await User.findOne({ googleId: profile.id });
       
       if (!user) {
-        // Create new user from Google profile
+        console.log('[Google Auth] Creating new user for:', profile.id);
         user = await User.create({
           googleId: profile.id,
           email: profile.emails[0].value,
           name: profile.displayName,
-          height: 65, // Default height, user can update later
+          height: 65,
           ridePreferences: [],
           profileComplete: false
         });
@@ -83,6 +117,7 @@ passport.use(new GoogleStrategy({
 
       return done(null, user);
     } catch (error) {
+      console.error('[Google Auth] Error:', error);
       return done(error, null);
     }
   }
@@ -99,12 +134,14 @@ app.get('/api/auth/google/callback',
     // Create JWT token
     const token = jwt.sign(
       { userId: req.user._id },
-      process.env.JWT_SECRET,
+      config.jwt.secret,
       { expiresIn: '24h' }
     );
 
     // Redirect to frontend with token
-    res.redirect(`http://localhost:3000/auth-callback?token=${token}`);
+    const redirectUrl = `${config.clientUrl}/auth-callback?token=${token}`;
+    console.log('[Google Callback] Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   }
 );
 

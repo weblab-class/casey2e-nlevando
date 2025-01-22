@@ -8,20 +8,30 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
-    // Development server settings
-    port: parseInt(process.env.PORT) || 3000,
+    port: 3000,
     host: true,
     proxy: {
-      '/api/queue-times': {
-        target: 'https://queue-times.com/parks/64/queue_times.json',
+      '/api': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/queue-times/, ''),
-      },
-    },
+        secure: false
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['lucide-react']
+        }
+      }
+    }
   },
   preview: {
-    // Preview server settings (for local preview only)
-    port: parseInt(process.env.PORT) || 4173,
-    host: true,
+    port: 4173,
+    host: true
   }
 });
