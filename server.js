@@ -9,6 +9,7 @@ import { dirname } from 'path';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import path from 'path';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -197,6 +198,18 @@ app.get('/api/user/profile', verifyToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Queue Times Route
+app.get('/api/queue-times', async (req, res) => {
+  try {
+    const response = await fetch('https://queue-times.com/parks/64/queue_times.json');
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Queue times error:', error);
+    res.status(500).json({ error: 'Failed to fetch queue times' });
   }
 });
 
