@@ -164,8 +164,16 @@ mongoose.connect(process.env.MONGODB_URI, {
   connectTimeoutMS: 30000,
   waitQueueTimeoutMS: 30000,
 })
-.then(() => {
+.then(async () => {
   console.log('Connected to MongoDB');
+  // Drop the username index if it exists
+  try {
+    await mongoose.connection.db.collection('users').dropIndex('username_1');
+    console.log('Dropped username index');
+  } catch (error) {
+    // Index might not exist, which is fine
+    console.log('No username index to drop');
+  }
   // Only start the server after successful MongoDB connection
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
