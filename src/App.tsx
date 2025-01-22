@@ -1,22 +1,101 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { LogIn, LogOut, Menu, X } from 'lucide-react';
 import Landing from './pages/Landing';
 import RideNow from './pages/RideNow';
-import Login from './components/Login';
+import AuthModal from './components/AuthModal';
+import AuthCallback from './pages/AuthCallback';
+import ProfileSetup from './components/ProfileSetup';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const params = new URLSearchParams(location.search);
+    const shouldShowSetup = params.get('setup') === 'true';
+
+    if (token) {
+      // Try to get cached user data first
+      const cachedUserData = localStorage.getItem('userData');
+      if (cachedUserData) {
+        const user = JSON.parse(cachedUserData);
+        setUserData(user);
+        setIsLoggedIn(true);
+        
+        // Immediately show setup if needed
+        if (!user.profileComplete || shouldShowSetup) {
+          setShowProfileSetup(true);
+        }
+      }
+
+      // Then fetch fresh data
+      fetchUserProfile(token);
+    } else {
+      // Clear state if no token
+      setIsLoggedIn(false);
+      setUserData(null);
+      setShowProfileSetup(false);
+    }
+  }, [location.search]); // Only depend on location.search
+
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const user = await response.json();
+        setUserData(user);
+        setIsLoggedIn(true);
+        localStorage.setItem('userData', JSON.stringify(user));
+        
+        const params = new URLSearchParams(location.search);
+        const shouldShowSetup = params.get('setup') === 'true';
+        
+        if (!user.profileComplete || shouldShowSetup) {
+          setShowProfileSetup(true);
+        }
+      } else {
+        handleLogout();
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      handleLogout();
+    }
+  };
 
   const handleLogin = () => {
     setIsLoggedIn(true);
-    setShowLogin(false);
+    setShowAuth(false);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
     setIsLoggedIn(false);
+    setUserData(null);
+    navigate('/');
+  };
+
+  const handleProfileComplete = () => {
+    setShowProfileSetup(false);
+    // Remove setup parameter from URL
+    navigate('/', { replace: true });
+    // Refresh user data
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchUserProfile(token);
+    }
   };
 
   return (
@@ -34,6 +113,7 @@ function App() {
               <div className="flex items-center space-x-4">
                 {isLoggedIn ? (
                   <>
+                    <span className="text-white">Welcome, {userData?.name}</span>
                     <button onClick={handleLogout} className="text-white hover:text-blue-400 flex items-center">
                       <LogOut className="h-5 w-5 mr-1" />
                       Logout
@@ -41,11 +121,11 @@ function App() {
                   </>
                 ) : (
                   <button 
-                    onClick={() => setShowLogin(true)} 
+                    onClick={() => setShowAuth(true)} 
                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
                   >
                     <LogIn className="h-5 w-5 mr-1" />
-                    Login
+                    Sign in with Google
                   </button>
                 )}
               </div>
@@ -66,20 +146,25 @@ function App() {
         {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <div className="px-2 pt-2 pb-3 space-y-1">
               {isLoggedIn ? (
-                <button
-                  onClick={handleLogout}
-                  className="text-white block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  Logout
-                </button>
+                <>
+                  <div className="text-white px-3 py-2">{userData?.name}</div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-white hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    <LogOut className="h-5 w-5 mr-1 inline" />
+                    Logout
+                  </button>
+                </>
               ) : (
                 <button
-                  onClick={() => setShowLogin(true)}
-                  className="text-white block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setShowAuth(true)}
+                  className="text-white hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium"
                 >
-                  Login
+                  <LogIn className="h-5 w-5 mr-1 inline" />
+                  Sign in with Google
                 </button>
               )}
             </div>
@@ -87,18 +172,44 @@ function App() {
         )}
       </nav>
 
-      {/* Main Content */}
-      <main>
-        {isLoggedIn ? (
-          <RideNow />
-        ) : (
-          <Landing onGetStarted={() => setShowLogin(true)} />
-        )}
-      </main>
+      {/* Main content */}
+      <Routes>
+        <Route path="/auth-callback" element={<AuthCallback />} />
+        <Route path="/" element={
+          <main>
+            {isLoggedIn ? (
+              <RideNow 
+                userData={userData} 
+                onProfileUpdate={() => {
+                  const token = localStorage.getItem('authToken');
+                  if (token) fetchUserProfile(token);
+                }}
+              />
+            ) : (
+              <Landing />
+            )}
+          </main>
+        } />
+      </Routes>
 
-      {/* Login Modal */}
-      {showLogin && (
-        <Login onClose={() => setShowLogin(false)} onLogin={handleLogin} />
+      {/* Auth Modal */}
+      {showAuth && (
+        <AuthModal
+          onClose={() => setShowAuth(false)}
+          onLogin={handleLogin}
+        />
+      )}
+
+      {/* Profile Setup Modal */}
+      {showProfileSetup && userData && (
+        <ProfileSetup
+          onClose={() => setShowProfileSetup(false)}
+          onComplete={handleProfileComplete}
+          initialData={{
+            email: userData.email,
+            name: userData.name
+          }}
+        />
       )}
     </div>
   );

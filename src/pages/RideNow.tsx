@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw, Ruler, Info, Accessibility, FlipHorizontal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw, Ruler, Info, Accessibility, FlipHorizontal, Settings, User } from 'lucide-react';
+import ProfileSetup from '../components/ProfileSetup';
 
 interface Ride {
   id: number;
@@ -7,7 +8,6 @@ interface Ride {
   waitTime: number | 'Closed';
   location: string;
   userRating: number | null;
-  isSingleRider?: boolean;
   heightRequirement: number; // in inches
   thrillLevel: 1 | 2 | 3 | 4 | 5; // 1 = mild, 5 = extreme
   features: {
@@ -22,6 +22,19 @@ interface Ride {
 interface Land {
   name: string;
   rides: Ride[];
+}
+
+interface RidePreference {
+  rideId: number;
+  rating: number;
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  height: number;
+  ridePreferences: RidePreference[];
+  profileComplete: boolean;
 }
 
 const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => void }> = ({ ride, onRate }) => {
@@ -39,7 +52,7 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
   };
 
   const getRatingIcon = (rating: number, isSelected: boolean, size: number = 24) => {
-    const className = `h-${size} w-${size} ${isSelected ? 'text-yellow-400' : 'text-gray-400'} cursor-pointer hover:text-yellow-400 transition-colors`;
+    const className = `h-${size} w-${size} ${isSelected ? 'text-yellow-400' : 'text-gray-400'} transition-colors`;
     switch (rating) {
       case 1: return <Frown className={className} />;
       case 2: return <Meh className={className} />;
@@ -87,19 +100,12 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
 
               {/* Rating System */}
               <div className="border-t border-white/10 pt-4">
-                <label className="block text-sm text-gray-300 mb-2">Rate this ride:</label>
+                <label className="block text-sm text-gray-300 mb-2">Your Rating:</label>
                 <div className="flex space-x-4">
                   {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRate(ride.id, rating);
-                      }}
-                      className="focus:outline-none"
-                    >
+                    <div key={rating}>
                       {getRatingIcon(rating, ride.userRating === rating)}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -162,274 +168,302 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
   );
 };
 
-const RideNow: React.FC = () => {
+interface RideNowProps {
+  userData?: UserData;
+  onProfileUpdate?: () => void;
+}
+
+const RIDES: Ride[] = [
+  // Jurassic Park
+  { 
+    id: 1, 
+    name: "Jurassic Park River Adventure",
+    waitTime: 45,
+    location: "Jurassic Park",
+    heightRequirement: 42,
+    thrillLevel: 4 as const,
+    features: {
+      isWaterRide: true,
+      hasAccessibleVehicle: true,
+      specialNotes: "85-foot plunge in complete darkness"
+    },
+    userRating: null
+  },
+  { 
+    id: 2, 
+    name: "Jurassic World VelociCoaster",
+    waitTime: 60,
+    location: "Jurassic Park",
+    heightRequirement: 51,
+    thrillLevel: 5 as const,
+    features: {
+      goesUpsideDown: true,
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "Florida's fastest and tallest launch coaster"
+    },
+    userRating: null
+  },
+  { 
+    id: 3, 
+    name: "Skull Island: Reign of Kong",
+    waitTime: 35,
+    location: "Jurassic Park",
+    heightRequirement: 36,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Immersive 3D adventure ride"
+    },
+    userRating: null
+  },
+  
+  // Marvel Super Hero Island
+  { 
+    id: 4, 
+    name: "Doctor Doom's Fearfall",
+    waitTime: 30,
+    location: "Marvel Super Hero Island",
+    heightRequirement: 52,
+    thrillLevel: 4 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "Space shot drop tower"
+    },
+    userRating: null
+  },
+  { 
+    id: 5, 
+    name: "Storm Force Accelatron",
+    waitTime: 15,
+    location: "Marvel Super Hero Island",
+    heightRequirement: 48,
+    thrillLevel: 2 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Spinning ride featuring X-Men characters"
+    },
+    userRating: null
+  },
+  { 
+    id: 6, 
+    name: "The Amazing Adventures of Spider-Man",
+    waitTime: 40,
+    location: "Marvel Super Hero Island",
+    heightRequirement: 40,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "3D motion simulator dark ride"
+    },
+    userRating: null
+  },
+  { 
+    id: 7, 
+    name: "The Incredible Hulk Coaster",
+    waitTime: 45,
+    location: "Marvel Super Hero Island",
+    heightRequirement: 54,
+    thrillLevel: 5 as const,
+    features: {
+      goesUpsideDown: true,
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "High-speed launch coaster"
+    },
+    userRating: null
+  },
+
+  // Seuss Landing
+  { 
+    id: 8, 
+    name: "Caro-Seuss-el",
+    waitTime: 10,
+    location: "Seuss Landing",
+    heightRequirement: 36,
+    thrillLevel: 1 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Family-friendly carousel ride"
+    },
+    userRating: null
+  },
+  { 
+    id: 9, 
+    name: "One Fish, Two Fish, Red Fish, Blue Fish",
+    waitTime: 15,
+    location: "Seuss Landing",
+    heightRequirement: 36,
+    thrillLevel: 1 as const,
+    features: {
+      isWaterRide: true,
+      hasAccessibleVehicle: true,
+      specialNotes: "Interactive spinning ride - May get wet!"
+    },
+    userRating: null
+  },
+  { 
+    id: 10, 
+    name: "The Cat in The Hat",
+    waitTime: 20,
+    location: "Seuss Landing",
+    heightRequirement: 36,
+    thrillLevel: 2 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Dark ride based on the classic book"
+    },
+    userRating: null
+  },
+  { 
+    id: 11, 
+    name: "The High in the Sky Seuss Trolley Train Ride!",
+    waitTime: 25,
+    location: "Seuss Landing",
+    heightRequirement: 36,
+    thrillLevel: 1 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Elevated train ride with scenic views"
+    },
+    userRating: null
+  },
+
+  // The Wizarding World of Harry Potter - Hogsmeade
+  { 
+    id: 12, 
+    name: "Flight of the Hippogriff",
+    waitTime: 45,
+    location: "The Wizarding World of Harry Potter - Hogsmeade",
+    heightRequirement: 36,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Family-friendly roller coaster"
+    },
+    userRating: null
+  },
+  { 
+    id: 13, 
+    name: "Hagrid's Magical Creatures Motorbike Adventure",
+    waitTime: 90,
+    location: "The Wizarding World of Harry Potter - Hogsmeade",
+    heightRequirement: 48,
+    thrillLevel: 4 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "Story coaster with launches and drops"
+    },
+    userRating: null
+  },
+  { 
+    id: 14, 
+    name: "Harry Potter and the Forbidden Journey",
+    waitTime: 60,
+    location: "The Wizarding World of Harry Potter - Hogsmeade",
+    heightRequirement: 48,
+    thrillLevel: 4 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "Motion simulator with robotic arm technology"
+    },
+    userRating: null
+  },
+
+  // Toon Lagoon
+  { 
+    id: 15, 
+    name: "Dudley Do-Right's Ripsaw Falls",
+    waitTime: 35,
+    location: "Toon Lagoon",
+    heightRequirement: 44,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: true,
+      hasAccessibleVehicle: false,
+      mustTransfer: true,
+      specialNotes: "Log flume ride - You will get wet!"
+    },
+    userRating: null
+  },
+  { 
+    id: 16, 
+    name: "Popeye & Bluto's Bilge-Rat Barges",
+    waitTime: 25,
+    location: "Toon Lagoon",
+    heightRequirement: 42,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: true,
+      hasAccessibleVehicle: false,
+      mustTransfer: true,
+      specialNotes: "River rapids ride - You will get soaked!"
+    },
+    userRating: null
+  }
+];
+
+const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
   const [lands, setLands] = useState<Land[]>([
-    {
-      name: "Jurassic Park",
-      rides: [
-        {
-          id: 1,
-          name: "Jurassic Park River Adventure",
-          waitTime: "Closed",
-          location: "Jurassic Park",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 4,
-          features: {
-            isWaterRide: true,
-            hasAccessibleVehicle: true,
-            specialNotes: "85-foot plunge in complete darkness"
-          }
-        },
-        {
-          id: 2,
-          name: "Jurassic World VelociCoaster",
-          waitTime: 15,
-          location: "Jurassic Park",
-          userRating: null,
-          heightRequirement: 54,
-          thrillLevel: 5,
-          features: {
-            goesUpsideDown: true,
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            mustTransfer: true,
-            specialNotes: "Maximum height requirement: 54 inches"
-          }
-        },
-        {
-          id: 3,
-          name: "Skull Island: Reign of Kong",
-          waitTime: 5,
-          location: "Jurassic Park",
-          userRating: null,
-          heightRequirement: 48,
-          thrillLevel: 3,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Maximum height requirement: 48 inches"
-          }
-        },
-      ],
+    { 
+      name: "Jurassic Park", 
+      rides: RIDES.filter(ride => ride.location === "Jurassic Park").map(ride => ({
+        ...ride,
+        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+      }))
     },
-    {
-      name: "Marvel Super Hero Island",
-      rides: [
-        {
-          id: 4,
-          name: "Doctor Doom's Fearfall",
-          waitTime: 10,
-          location: "Marvel Super Hero Island",
-          userRating: null,
-          heightRequirement: 48,
-          thrillLevel: 2,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Maximum height requirement: 48 inches"
-          }
-        },
-        {
-          id: 5,
-          name: "Storm Force Accelatron",
-          waitTime: 5,
-          location: "Marvel Super Hero Island",
-          userRating: null,
-          heightRequirement: 54,
-          thrillLevel: 5,
-          features: {
-            goesUpsideDown: true,
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            mustTransfer: true,
-            specialNotes: "Maximum height requirement: 54 inches"
-          }
-        },
-        {
-          id: 6,
-          name: "The Amazing Adventures of Spider-Man",
-          waitTime: 10,
-          location: "Marvel Super Hero Island",
-          userRating: null,
-          heightRequirement: 48,
-          thrillLevel: 3,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Maximum height requirement: 48 inches"
-          }
-        },
-        {
-          id: 7,
-          name: "The Incredible Hulk Coaster",
-          waitTime: 10,
-          location: "Marvel Super Hero Island",
-          userRating: null,
-          heightRequirement: 54,
-          thrillLevel: 5,
-          features: {
-            goesUpsideDown: true,
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            mustTransfer: true,
-            specialNotes: "Maximum height requirement: 54 inches"
-          }
-        },
-      ],
+    { 
+      name: "Marvel Super Hero Island", 
+      rides: RIDES.filter(ride => ride.location === "Marvel Super Hero Island").map(ride => ({
+        ...ride,
+        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+      }))
     },
-    {
-      name: "Seuss Landing",
-      rides: [
-        {
-          id: 8,
-          name: "Caro-Seuss-el",
-          waitTime: 5,
-          location: "Seuss Landing",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Perfect for all ages"
-          }
-        },
-        {
-          id: 9,
-          name: "One Fish, Two Fish, Red Fish, Blue Fish",
-          waitTime: 5,
-          location: "Seuss Landing",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Perfect for all ages"
-          }
-        },
-        {
-          id: 10,
-          name: "The Cat in The Hat",
-          waitTime: 5,
-          location: "Seuss Landing",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Perfect for all ages"
-          }
-        },
-        {
-          id: 11,
-          name: "The High in the Sky Seuss Trolley Train Ride!",
-          waitTime: 5,
-          location: "Seuss Landing",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Perfect for all ages"
-          }
-        },
-      ],
+    { 
+      name: "Seuss Landing", 
+      rides: RIDES.filter(ride => ride.location === "Seuss Landing").map(ride => ({
+        ...ride,
+        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+      }))
     },
-    {
-      name: "The Wizarding World of Harry Potter - Hogsmeade",
-      rides: [
-        {
-          id: 12,
-          name: "Flight of the Hippogriff",
-          waitTime: 45,
-          location: "The Wizarding World of Harry Potter - Hogsmeade",
-          userRating: null,
-          heightRequirement: 48,
-          thrillLevel: 3,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Maximum height requirement: 48 inches"
-          }
-        },
-        {
-          id: 13,
-          name: "Hagrid's Magical Creatures Motorbike Adventure",
-          waitTime: 60,
-          location: "The Wizarding World of Harry Potter - Hogsmeade",
-          userRating: null,
-          heightRequirement: 54,
-          thrillLevel: 5,
-          features: {
-            goesUpsideDown: true,
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            mustTransfer: true,
-            specialNotes: "Maximum height requirement: 54 inches"
-          }
-        },
-        {
-          id: 14,
-          name: "Harry Potter and the Forbidden Journey",
-          waitTime: 15,
-          location: "The Wizarding World of Harry Potter - Hogsmeade",
-          userRating: null,
-          heightRequirement: 48,
-          thrillLevel: 4,
-          features: {
-            isWaterRide: false,
-            hasAccessibleVehicle: true,
-            specialNotes: "Maximum height requirement: 48 inches"
-          }
-        },
-      ],
+    { 
+      name: "The Wizarding World of Harry Potter - Hogsmeade", 
+      rides: RIDES.filter(ride => ride.location === "The Wizarding World of Harry Potter - Hogsmeade").map(ride => ({
+        ...ride,
+        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+      }))
     },
-    {
-      name: "Toon Lagoon",
-      rides: [
-        {
-          id: 15,
-          name: "Dudley Do-Right's Ripsaw Falls",
-          waitTime: 5,
-          location: "Toon Lagoon",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: true,
-            hasAccessibleVehicle: true,
-            specialNotes: "85-foot plunge in complete darkness"
-          }
-        },
-        {
-          id: 16,
-          name: "Popeye & Bluto's Bilge-Rat Barges",
-          waitTime: 10,
-          location: "Toon Lagoon",
-          userRating: null,
-          heightRequirement: 42,
-          thrillLevel: 1,
-          features: {
-            isWaterRide: true,
-            hasAccessibleVehicle: true,
-            specialNotes: "85-foot plunge in complete darkness"
-          }
-        },
-      ],
-    },
+    { 
+      name: "Toon Lagoon", 
+      rides: RIDES.filter(ride => ride.location === "Toon Lagoon").map(ride => ({
+        ...ride,
+        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+      }))
+    }
   ]);
 
-  const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [cooldownTime, setCooldownTime] = useState<number>(0);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
 
   // Add cooldown timer effect
-  React.useEffect(() => {
+  useEffect(() => {
     let timer: number | undefined;
     if (cooldownTime > 0) {
       timer = window.setInterval(() => {
@@ -440,6 +474,19 @@ const RideNow: React.FC = () => {
       if (timer) window.clearInterval(timer);
     };
   }, [cooldownTime]);
+
+  // Update lands when userData changes
+  useEffect(() => {
+    if (userData?.ridePreferences) {
+      setLands(prevLands => prevLands.map(land => ({
+        ...land,
+        rides: land.rides.map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
+        }))
+      })));
+    }
+  }, [userData]);
 
   const updateWaitTimes = async () => {
     if (cooldownTime > 0) return;
@@ -476,7 +523,7 @@ const RideNow: React.FC = () => {
       setLastUpdated(
         `${now.toLocaleTimeString()} on ${now.toLocaleDateString()}`
       );
-      setCooldownTime(60); // 1 minute in seconds
+      setCooldownTime(60); // 1 minute cooldown
     } catch (error) {
       console.error('Failed to fetch wait times:', error);
     } finally {
@@ -493,24 +540,40 @@ const RideNow: React.FC = () => {
     })));
   };
 
-  const suggestNextRide = () => {
-    const allRides = lands.flatMap(land => land.rides);
-    const openRides = allRides.filter(ride => ride.waitTime !== 'Closed' && !ride.isSingleRider);
-    const lowestWaitTime = Math.min(...openRides.map(ride => ride.waitTime as number));
-    
-    // Get all rides that share the lowest wait time
-    const lowestWaitRides = openRides.filter(ride => ride.waitTime === lowestWaitTime);
-    
-    // Randomly select one of the rides with the lowest wait time
-    const randomIndex = Math.floor(Math.random() * lowestWaitRides.length);
-    const suggestedRide = lowestWaitRides[randomIndex];
-    
-    setSuggestedRide(suggestedRide || null);
+  const handleProfileComplete = () => {
+    setShowProfileEdit(false);
+    if (onProfileUpdate) {
+      onProfileUpdate();
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
+    <div className="container mx-auto px-4 py-8">
+      {/* User Profile Section */}
+      {userData && (
+        <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-8">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="bg-blue-500 rounded-full p-3">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">{userData.name}</h2>
+                <p className="text-gray-300">Height: {Math.floor(userData.height / 12)}'{userData.height % 12}"</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowProfileEdit(true)}
+              className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+            >
+              <Settings className="h-5 w-5" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wait Times Header */}
       <div className="flex flex-col gap-4 mb-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">Universal's Islands of Adventure</h1>
@@ -536,28 +599,6 @@ const RideNow: React.FC = () => {
         )}
       </div>
 
-      {/* Suggestion Section */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-white">Available Rides</h2>
-          <button
-            onClick={suggestNextRide}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
-          >
-            Suggest Next Ride
-          </button>
-        </div>
-        
-        {suggestedRide && (
-          <div className="bg-green-500/20 backdrop-blur-md rounded-lg p-6 mb-8">
-            <h3 className="text-xl font-semibold text-white mb-2">Suggested Next Ride:</h3>
-            <p className="text-green-300 text-lg">
-              {suggestedRide.name} - {suggestedRide.waitTime} minute wait
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Lands and Rides Grid */}
       {lands.map((land) => (
         <div key={land.name} className="mb-12">
@@ -569,6 +610,20 @@ const RideNow: React.FC = () => {
           </div>
         </div>
       ))}
+
+      {/* Profile Edit Modal */}
+      {showProfileEdit && userData && (
+        <ProfileSetup
+          onClose={() => setShowProfileEdit(false)}
+          onComplete={handleProfileComplete}
+          initialData={{
+            email: userData.email,
+            name: userData.name,
+            height: userData.height,
+            ridePreferences: userData.ridePreferences
+          }}
+        />
+      )}
     </div>
   );
 };
