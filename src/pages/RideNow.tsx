@@ -461,6 +461,7 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [cooldownTime, setCooldownTime] = useState<number>(0);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
 
   // Add cooldown timer effect
   useEffect(() => {
@@ -547,6 +548,38 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
     }
   };
 
+  // Add the calculateRideScore function
+  const calculateRideScore = (rating: number, waitTime: number | 'Closed') => {
+    if (waitTime === 'Closed') return -1;
+    // Rating weight: 0.7 (70% importance)
+    // Wait time weight: 0.3 (30% importance)
+    const ratingScore = (rating / 5) * 0.7;
+    const waitTimeScore = (1 - Math.min(waitTime, 120) / 120) * 0.3; // Cap wait times at 120 minutes
+    return ratingScore + waitTimeScore;
+  };
+
+  // Add the suggestNextRide function
+  const suggestNextRide = () => {
+    let bestRide: Ride | null = null;
+    let bestScore = -1;
+
+    // Flatten all rides from all lands
+    const allRides = lands.flatMap(land => land.rides);
+
+    allRides.forEach(ride => {
+      const userRating = ride.userRating || 3; // Default to 3 if no rating
+      if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
+        const score = calculateRideScore(userRating, ride.waitTime);
+        if (score > bestScore) {
+          bestScore = score;
+          bestRide = ride;
+        }
+      }
+    });
+
+    setSuggestedRide(bestRide);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* User Profile Section */}
@@ -577,14 +610,22 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
       <div className="flex flex-col gap-4 mb-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">Universal's Islands of Adventure</h1>
-          <button
-            onClick={updateWaitTimes}
-            disabled={isLoading || cooldownTime > 0}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-            Check Wait Times
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={updateWaitTimes}
+              disabled={isLoading || cooldownTime > 0}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              Check Wait Times
+            </button>
+            <button
+              onClick={suggestNextRide}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              Ride Now!
+            </button>
+          </div>
         </div>
         {lastUpdated && (
           <div className="text-gray-400 text-sm flex flex-col items-end gap-1">
@@ -595,6 +636,25 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
                 Next refresh available in: {Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')}
               </span>
             )}
+          </div>
+        )}
+        {suggestedRide && (
+          <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mt-4">
+            <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-lg text-white">{suggestedRide.name}</p>
+                <p className="text-sm text-gray-300">Location: {suggestedRide.location}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg text-white">
+                  {suggestedRide.waitTime === 'Closed' ? 'Closed' : `${suggestedRide.waitTime} min wait`}
+                </p>
+                {suggestedRide.userRating && (
+                  <p className="text-sm text-gray-300">Your Rating: {suggestedRide.userRating}/5</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

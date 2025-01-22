@@ -237,8 +237,8 @@ mongoose.connect(process.env.MONGODB_URI, {
   } catch (error) {
     console.log('No username index to drop');
   }
-  // Use the PORT from environment variable
-  const PORT = process.env.PORT || 3000;
+  // Use port 5000 by default for the backend
+  const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
