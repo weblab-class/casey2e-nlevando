@@ -24,6 +24,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
     height: initialData.height?.toString() || '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +37,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
         return;
       }
 
+      // Log what we're about to send
+      console.log('Sending profile update:', {
+        name: formData.name,
+        height: parseInt(formData.height)
+      });
+
       const response = await fetch(getApiUrl('/api/user/profile'), {
         method: 'POST',
         headers: {
@@ -44,8 +51,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
         },
         body: JSON.stringify({
           name: formData.name,
-          height: parseInt(formData.height),
-          ridePreferences: [] // Empty array for now
+          height: parseInt(formData.height)
         })
       });
 
@@ -54,14 +60,15 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
         throw new Error(errorData.message || 'Failed to save profile');
       }
 
-      const data = await response.json();
-      
-      // Store user data in localStorage for easy access
+      const updatedUser = await response.json();
+      console.log('Received updated user:', updatedUser);
+
+      // Only update name and height in localStorage
+      const existingData = JSON.parse(localStorage.getItem('userData') || '{}');
       localStorage.setItem('userData', JSON.stringify({
+        ...existingData,
         name: formData.name,
-        email: initialData.email,
         height: parseInt(formData.height),
-        ridePreferences: [],
         profileComplete: true
       }));
 
@@ -69,6 +76,49 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onClose, onComplete, initia
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Failed to save profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    console.log('[ProfileSetup] Starting save...');
+    if (!formData.name || !formData.height) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('No auth token found');
+        return;
+      }
+
+      // Only send name and height in the update request
+      const response = await fetch(getApiUrl('/api/user/profile'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          height: formData.height
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save profile');
+      }
+
+      console.log('[ProfileSetup] Save successful, storing user data...');
+      onComplete();
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setError('Failed to save profile. Please try again.');
     } finally {
       setIsSaving(false);
     }

@@ -640,12 +640,21 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   };
 
   const handleRideRating = (rideId: number, rating: number) => {
+    // Update local state
     setLands(prevLands => prevLands.map(land => ({
       ...land,
       rides: land.rides.map(ride => 
         ride.id === rideId ? { ...ride, userRating: rating } : ride
       )
     })));
+
+    // Also update the suggested rides if they exist
+    if (suggestedRide?.id === rideId) {
+      setSuggestedRide(prev => prev ? { ...prev, userRating: rating } : null);
+    }
+    if (runnerUpRide?.id === rideId) {
+      setRunnerUpRide(prev => prev ? { ...prev, userRating: rating } : null);
+    }
   };
 
   const handleProfileComplete = () => {
@@ -676,49 +685,75 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       const response = await fetch('/api/queue-times');
       const data = await response.json();
       
-      // Create updated lands with fresh wait times
-      const updatedLands = lands.map((land: Land) => ({
-        ...land,
-        rides: land.rides
-          .filter(ride => ride.heightRequirement <= userHeight)
-          .map((ride: Ride) => {
-            const updatedLand = data.lands.find((l: any) => 
-              l.name.toLowerCase().includes(land.name.toLowerCase())
-            );
-            
-            const updatedRide = updatedLand?.rides.find((r: any) => 
-              r.name.toLowerCase().includes(ride.name.toLowerCase())
-            );
-            
-            if (updatedRide) {
-              return {
-                ...ride,
-                waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
-              };
-            }
-            return ride;
-          })
-      })).filter(land => land.rides.length > 0);
+      // Get all rides with fresh wait times, preserving existing ratings
+      const allRidesWithUpdatedTimes = RIDES
+        .filter(ride => ride.heightRequirement <= userHeight)
+        .map(ride => {
+          // Find the matching land and ride in the API response
+          const updatedLand = data.lands.find((l: any) => 
+            l.name.toLowerCase().includes(ride.location.toLowerCase())
+          );
+          
+          const updatedRide = updatedLand?.rides.find((r: any) => 
+            r.name.toLowerCase().includes(ride.name.toLowerCase())
+          );
 
-      // Update the state
+          // Find the existing ride in current lands to preserve rating
+          const existingRide = lands.flatMap(land => land.rides)
+            .find(r => r.id === ride.id);
+          
+          return {
+            ...ride,
+            waitTime: updatedRide?.is_open ? updatedRide.wait_time : 'Closed',
+            // Preserve existing rating if available, otherwise check userData
+            userRating: existingRide?.userRating || 
+                       userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || 
+                       null
+          };
+        });
+
+      // Update the lands state
+      const updatedLands = [
+        { 
+          name: "Jurassic Park", 
+          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Jurassic Park")
+        },
+        { 
+          name: "Marvel Super Hero Island", 
+          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Marvel Super Hero Island")
+        },
+        { 
+          name: "Seuss Landing", 
+          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Seuss Landing")
+        },
+        { 
+          name: "The Wizarding World of Harry Potter - Hogsmeade", 
+          rides: allRidesWithUpdatedTimes.filter(ride => 
+            ride.location === "The Wizarding World of Harry Potter - Hogsmeade"
+          )
+        },
+        { 
+          name: "Toon Lagoon", 
+          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Toon Lagoon")
+        }
+      ].filter(land => land.rides.length > 0);
+
       setLands(updatedLands);
       const now = new Date();
       setLastUpdated(now);
 
-      // Use the fresh data to find the best rides
+      // Find best rides using the fresh data
       let bestRide: Ride | null = null;
       let runnerUpRide: Ride | null = null;
       let bestScore = -1;
       let secondBestScore = -1;
 
-      // Get rides from the fresh data
-      const allRides = updatedLands.flatMap(land => land.rides)
-        .filter(ride => ride.heightRequirement <= userHeight);
-
-      allRides.forEach(ride => {
+      // Calculate scores using the fresh data
+      allRidesWithUpdatedTimes.forEach(ride => {
         const userRating = ride.userRating || 3; // Default to 3 if no rating
         if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
           const score = calculateRideScore(userRating, ride.waitTime);
+          console.log(`Ride: ${ride.name}, Rating: ${userRating}, Wait: ${ride.waitTime}, Score: ${score}`);
           if (score > bestScore) {
             // Move current best to runner up
             runnerUpRide = bestRide;
