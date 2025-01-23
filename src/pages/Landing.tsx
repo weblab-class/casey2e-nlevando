@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, ThumbsUp, Map, ArrowDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Landing: React.FC = () => {
   return (

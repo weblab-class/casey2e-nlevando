@@ -655,17 +655,27 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               </button>
             </div>
 
-            <button 
-              onClick={updateWaitTimes}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-              disabled={isLoading || cooldownTime > 0}
-            >
-              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Refresh Times</span>
-              {cooldownTime > 0 && (
-                <span>({Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')})</span>
-              )}
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={suggestNextRide}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors"
+              >
+                <Clock className="h-5 w-5" />
+                Ride Now
+              </button>
+
+              <button 
+                onClick={updateWaitTimes}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                disabled={isLoading || cooldownTime > 0}
+              >
+                <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                <span>Refresh Times</span>
+                {cooldownTime > 0 && (
+                  <span>({Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')})</span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Wait Times Info */}
