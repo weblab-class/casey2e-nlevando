@@ -518,6 +518,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   const [cooldownTime, setCooldownTime] = useState<number>(0);
   const [showProfileEdit, setShowProfileEdit] = useState<boolean>(false);
   const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
+  const [runnerUpRide, setRunnerUpRide] = useState<Ride | null>(null);
 
   // Initialize lands with user preferences
   useEffect(() => {
@@ -577,8 +578,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   }, [cooldownTime]);
 
   const updateWaitTimes = async (): Promise<void> => {
-    if (cooldownTime > 0) return;
-    
+    // Remove cooldown check to allow immediate refresh when using Ride Now
     setIsLoading(true);
     try {
       const response = await fetch('/api/queue-times');
@@ -607,7 +607,10 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
 
       const now = new Date();
       setLastUpdated(now);
-      setCooldownTime(60);
+      // Only set cooldown if not called from suggestNextRide
+      if (!suggestNextRide.caller) {
+        setCooldownTime(60);
+      }
     } catch (error) {
       console.error('Failed to fetch wait times:', error);
     } finally {
@@ -642,9 +645,14 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   };
 
   // Add the suggestNextRide function
-  const suggestNextRide = () => {
+  const suggestNextRide = async () => {
+    // First refresh wait times
+    await updateWaitTimes();
+    
     let bestRide: Ride | null = null;
+    let runnerUpRide: Ride | null = null;
     let bestScore = -1;
+    let secondBestScore = -1;
 
     // Flatten all rides from all lands
     const allRides = lands.flatMap(land => land.rides);
@@ -654,13 +662,22 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
         const score = calculateRideScore(userRating, ride.waitTime);
         if (score > bestScore) {
+          // Move current best to runner up
+          runnerUpRide = bestRide;
+          secondBestScore = bestScore;
+          // Set new best
           bestScore = score;
           bestRide = ride;
+        } else if (score > secondBestScore) {
+          // Update runner up
+          secondBestScore = score;
+          runnerUpRide = ride;
         }
       }
     });
 
     setSuggestedRide(bestRide);
+    setRunnerUpRide(runnerUpRide);
   };
 
   const handleParkSelect = (parkId: string): void => {
@@ -695,7 +712,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-start mb-8">
             <div>
               <h2 className="text-3xl font-bold text-white">
                 {PARKS.find(p => p.id === selectedPark)?.name}
@@ -715,55 +732,81 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={suggestNextRide}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors"
-              >
-                <Clock className="h-5 w-5" />
-                Ride Now
-              </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={suggestNextRide}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors"
+                >
+                  <Clock className="h-5 w-5" />
+                  Ride Now
+                </button>
 
-              <button 
-                onClick={updateWaitTimes}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-                disabled={isLoading || cooldownTime > 0}
-              >
-                <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-                <span>Refresh Times</span>
-                {cooldownTime > 0 && (
-                  <span>({Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')})</span>
-                )}
-              </button>
+                <button 
+                  onClick={updateWaitTimes}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                  disabled={isLoading || cooldownTime > 0}
+                >
+                  <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>Refresh Times</span>
+                  {cooldownTime > 0 && (
+                    <span>({Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')})</span>
+                  )}
+                </button>
+              </div>
+
+              {/* Wait Times Info */}
+              {lastUpdated && (
+                <div className="text-right">
+                  <p className="text-blue-400 font-medium">Powered by Queue-Times.com</p>
+                  <p className="text-gray-400 text-sm">Last updated: {lastUpdated.toLocaleTimeString()} on {lastUpdated.toLocaleDateString()}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Wait Times Info */}
-          {lastUpdated && (
-            <div className="text-gray-400 text-sm mb-8">
-              <p>Powered by Queue-Times.com</p>
-              <p>Last updated: {lastUpdated.toLocaleTimeString()} on {lastUpdated.toLocaleDateString()}</p>
-            </div>
-          )}
-
-          {/* Suggested Ride */}
+          {/* Suggested Rides */}
           {suggestedRide && (
-            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-8">
-              <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg text-white">{suggestedRide.name}</p>
-                  <p className="text-sm text-gray-300">Location: {suggestedRide.location}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg text-white">
-                    {suggestedRide.waitTime === 'Closed' ? 'Closed' : `${suggestedRide.waitTime} min wait`}
-                  </p>
-                  {suggestedRide.userRating && (
-                    <p className="text-sm text-gray-300">Your Rating: {suggestedRide.userRating}/5</p>
-                  )}
+            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-8 space-y-4">
+              {/* Best Suggestion */}
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg text-white">{suggestedRide.name}</p>
+                    <p className="text-sm text-gray-300">Location: {suggestedRide.location}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg text-white">
+                      {suggestedRide.waitTime === 'Closed' ? 'Closed' : `${suggestedRide.waitTime} min wait`}
+                    </p>
+                    {suggestedRide.userRating && (
+                      <p className="text-sm text-gray-300">Your Rating: {suggestedRide.userRating}/5</p>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Runner Up */}
+              {runnerUpRide && (
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-2">Runner Up:</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-lg text-white">{runnerUpRide.name}</p>
+                      <p className="text-sm text-gray-300">Location: {runnerUpRide.location}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg text-white">
+                        {runnerUpRide.waitTime === 'Closed' ? 'Closed' : `${runnerUpRide.waitTime} min wait`}
+                      </p>
+                      {runnerUpRide.userRating && (
+                        <p className="text-sm text-gray-300">Your Rating: {runnerUpRide.userRating}/5</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
