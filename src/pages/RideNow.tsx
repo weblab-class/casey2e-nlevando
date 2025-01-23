@@ -630,7 +630,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
                   <img
                     src={park.imageUrl}
                     alt={park.name}
-                    className="w-full h-40 object-cover rounded-lg mb-4"
+                    className="w-full h-32 object-contain rounded-lg mb-4"
                   />
                 )}
                 <h3 className="text-xl font-semibold text-white mb-2">{park.name}</h3>
