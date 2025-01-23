@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { LogIn, LogOut, Menu, X } from 'lucide-react';
+import { LogIn, LogOut, Menu, X, User } from 'lucide-react';
 import { getApiUrl } from './config';
 import Landing from './pages/Landing';
 import RideNow from './pages/RideNow';
@@ -30,8 +30,8 @@ function App() {
         setUserData(user);
         setIsLoggedIn(true);
         
-        // Immediately show setup if needed
-        if (!user.profileComplete || shouldShowSetup) {
+        // Only show setup if explicitly requested via URL or if profile is not complete
+        if (shouldShowSetup || !user.profileComplete) {
           setShowProfileSetup(true);
         }
       }
@@ -63,7 +63,8 @@ function App() {
         const params = new URLSearchParams(location.search);
         const shouldShowSetup = params.get('setup') === 'true';
         
-        if (!user.profileComplete || shouldShowSetup) {
+        // Only show setup if explicitly requested via URL or if profile is not complete
+        if (shouldShowSetup && !user.profileComplete) {
           setShowProfileSetup(true);
         }
       } else {
@@ -89,12 +90,14 @@ function App() {
   };
 
   const handleProfileComplete = () => {
+    console.log('[App] Profile complete handler called');
     setShowProfileSetup(false);
     // Remove setup parameter from URL
     navigate('/', { replace: true });
     // Refresh user data
     const token = localStorage.getItem('authToken');
     if (token) {
+      console.log('[App] Refreshing user data...');
       fetchUserProfile(token);
     }
   };
@@ -115,6 +118,13 @@ function App() {
                 {isLoggedIn ? (
                   <>
                     <span className="text-white">Welcome, {userData?.name}</span>
+                    <button 
+                      onClick={() => setShowProfileSetup(true)}
+                      className="text-white hover:text-blue-400 flex items-center"
+                    >
+                      <User className="h-5 w-5 mr-1" />
+                      Edit Profile
+                    </button>
                     <button onClick={handleLogout} className="text-white hover:text-blue-400 flex items-center">
                       <LogOut className="h-5 w-5 mr-1" />
                       Logout
@@ -151,6 +161,13 @@ function App() {
               {isLoggedIn ? (
                 <>
                   <div className="text-white px-3 py-2">{userData?.name}</div>
+                  <button
+                    onClick={() => setShowProfileSetup(true)}
+                    className="text-white hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    <User className="h-5 w-5 mr-1 inline" />
+                    Edit Profile
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="text-white hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium"
@@ -208,7 +225,8 @@ function App() {
           onComplete={handleProfileComplete}
           initialData={{
             email: userData.email,
-            name: userData.name
+            name: userData.name,
+            height: userData.height
           }}
         />
       )}

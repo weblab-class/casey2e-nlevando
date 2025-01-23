@@ -4,6 +4,7 @@ import type { FC, ReactElement, MouseEvent } from 'react';
 import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw, Ruler, Info, Accessibility, FlipHorizontal, Settings, User, MapIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import ProfileSetup from '../components/ProfileSetup';
+import { getApiUrl } from '../config';
 
 interface Ride {
   id: number;
@@ -81,9 +82,53 @@ interface IconProps {
 
 const RideCard: FC<RideCardProps> = ({ ride, onRate }): ReactElement => {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const handleClick = (e: MouseEvent<HTMLDivElement>): void => {
+    // Don't flip if clicking on rating buttons
+    if ((e.target as HTMLElement).closest('.rating-buttons')) {
+      return;
+    }
     setIsFlipped(!isFlipped);
+  };
+
+  const handleRating = async (rating: number) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch(getApiUrl('/api/user/profile'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rideId: ride.id,
+          rating: rating
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update rating');
+      }
+
+      const updatedUser = await response.json();
+      // Update the local state with the new rating
+      onRate(ride.id, rating);
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      alert('Failed to update rating. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getThrillLevelText = (level: number): string => {
@@ -97,8 +142,8 @@ const RideCard: FC<RideCardProps> = ({ ride, onRate }): ReactElement => {
     }
   };
 
-  const getRatingIcon = (rating: number, isSelected: boolean, size: number = 24): ReactElement => {
-    const className = `h-${size} w-${size} ${isSelected ? 'text-yellow-400' : 'text-gray-400'} transition-colors`;
+  const getRatingIcon = (rating: number, isSelected: boolean): ReactElement => {
+    const className = `h-6 w-6 ${isSelected ? 'text-yellow-400' : 'text-gray-400'} cursor-pointer hover:text-yellow-400 transition-colors ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`;
     switch (rating) {
       case 1: return <Frown className={className} />;
       case 2: return <Meh className={className} />;
@@ -147,11 +192,16 @@ const RideCard: FC<RideCardProps> = ({ ride, onRate }): ReactElement => {
               {/* Rating System */}
               <div className="border-t border-white/10 pt-4">
                 <label className="block text-sm text-gray-300 mb-2">Your Rating:</label>
-                <div className="flex space-x-4">
+                <div className="flex space-x-4 rating-buttons" onClick={(e) => e.stopPropagation()}>
                   {[1, 2, 3, 4, 5].map((rating) => (
-                    <div key={rating}>
+                    <button
+                      key={rating}
+                      onClick={() => handleRating(rating)}
+                      disabled={isUpdating}
+                      className="focus:outline-none disabled:cursor-not-allowed"
+                    >
                       {getRatingIcon(rating, ride.userRating === rating)}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -242,7 +292,7 @@ const RIDES: Ride[] = [
       isWaterRide: false,
       hasAccessibleVehicle: true,
       mustTransfer: true,
-      specialNotes: "Florida's fastest and tallest launch coaster"
+      specialNotes: "High-speed launch coaster"
     },
     userRating: null
   },
@@ -462,49 +512,57 @@ const RIDES: Ride[] = [
 const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement => {
   const [selectedPark, setSelectedPark] = useState<string>('');
   const [showParkSelector, setShowParkSelector] = useState<boolean>(true);
-  const [lands, setLands] = useState<Land[]>([
-    { 
-      name: "Jurassic Park", 
-      rides: RIDES.filter(ride => ride.location === "Jurassic Park").map(ride => ({
-        ...ride,
-        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-      }))
-    },
-    { 
-      name: "Marvel Super Hero Island", 
-      rides: RIDES.filter(ride => ride.location === "Marvel Super Hero Island").map(ride => ({
-        ...ride,
-        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-      }))
-    },
-    { 
-      name: "Seuss Landing", 
-      rides: RIDES.filter(ride => ride.location === "Seuss Landing").map(ride => ({
-        ...ride,
-        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-      }))
-    },
-    { 
-      name: "The Wizarding World of Harry Potter - Hogsmeade", 
-      rides: RIDES.filter(ride => ride.location === "The Wizarding World of Harry Potter - Hogsmeade").map(ride => ({
-        ...ride,
-        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-      }))
-    },
-    { 
-      name: "Toon Lagoon", 
-      rides: RIDES.filter(ride => ride.location === "Toon Lagoon").map(ride => ({
-        ...ride,
-        userRating: userData?.ridePreferences?.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-      }))
-    }
-  ]);
-
+  const [lands, setLands] = useState<Land[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [cooldownTime, setCooldownTime] = useState<number>(0);
   const [showProfileEdit, setShowProfileEdit] = useState<boolean>(false);
   const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
+
+  // Initialize lands with user preferences
+  useEffect(() => {
+    if (!userData) return;  // Don't initialize if no user data
+
+    const initialLands = [
+      { 
+        name: "Jurassic Park", 
+        rides: RIDES.filter(ride => ride.location === "Jurassic Park").map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+        }))
+      },
+      { 
+        name: "Marvel Super Hero Island", 
+        rides: RIDES.filter(ride => ride.location === "Marvel Super Hero Island").map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+        }))
+      },
+      { 
+        name: "Seuss Landing", 
+        rides: RIDES.filter(ride => ride.location === "Seuss Landing").map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+        }))
+      },
+      { 
+        name: "The Wizarding World of Harry Potter - Hogsmeade", 
+        rides: RIDES.filter(ride => ride.location === "The Wizarding World of Harry Potter - Hogsmeade").map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+        }))
+      },
+      { 
+        name: "Toon Lagoon", 
+        rides: RIDES.filter(ride => ride.location === "Toon Lagoon").map(ride => ({
+          ...ride,
+          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+        }))
+      }
+    ];
+
+    setLands(initialLands);
+  }, [userData]); // Re-run when userData changes
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
@@ -517,18 +575,6 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       if (timer) clearInterval(timer);
     };
   }, [cooldownTime]);
-
-  useEffect(() => {
-    if (userData?.ridePreferences) {
-      setLands(prevLands => prevLands.map((land: Land) => ({
-        ...land,
-        rides: land.rides.map((ride: Ride) => ({
-          ...ride,
-          userRating: userData.ridePreferences.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
-        }))
-      })));
-    }
-  }, [userData]);
 
   const updateWaitTimes = async (): Promise<void> => {
     if (cooldownTime > 0) return;
@@ -569,10 +615,10 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
     }
   };
 
-  const handleRating = (rideId: number, rating: number): void => {
-    setLands(lands.map((land: Land) => ({
+  const handleRideRating = (rideId: number, rating: number) => {
+    setLands(prevLands => prevLands.map(land => ({
       ...land,
-      rides: land.rides.map((ride: Ride) => 
+      rides: land.rides.map(ride => 
         ride.id === rideId ? { ...ride, userRating: rating } : ride
       )
     })));
@@ -727,7 +773,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               <h2 className="text-2xl font-bold text-white mb-6">{land.name}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {land.rides.map((ride) => (
-                  <RideCard key={ride.id} ride={ride} onRate={handleRating} />
+                  <RideCard key={ride.id} ride={ride} onRate={handleRideRating} />
                 ))}
               </div>
             </div>

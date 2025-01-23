@@ -157,10 +157,32 @@ app.get('/api/auth/google/callback',
 // Profile Routes
 app.post('/api/user/profile', verifyToken, async (req, res) => {
   try {
-    const { name, height, ridePreferences } = req.body;
+    const { name, height, rideId, rating, ridePreferences } = req.body;
 
-    // Validate the data
-    if (!name || !height || !Array.isArray(ridePreferences)) {
+    // If updating a single ride rating
+    if (rideId !== undefined && rating !== undefined) {
+      const user = await User.findById(req.userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Find existing preference or create new one
+      const existingPrefIndex = user.ridePreferences.findIndex(pref => pref.rideId === rideId);
+      if (existingPrefIndex !== -1) {
+        // Update existing preference
+        user.ridePreferences[existingPrefIndex].rating = rating;
+      } else {
+        // Add new preference
+        user.ridePreferences.push({ rideId, rating });
+      }
+
+      // Save the updated user
+      const updatedUser = await user.save();
+      return res.json(updatedUser);
+    }
+
+    // If updating full profile
+    if (!name || !height) {
       return res.status(400).json({ error: 'Invalid profile data' });
     }
 
@@ -170,10 +192,7 @@ app.post('/api/user/profile', verifyToken, async (req, res) => {
       {
         name,
         height: parseInt(height),
-        ridePreferences: ridePreferences.map(pref => ({
-          rideId: parseInt(pref.rideId),
-          rating: parseInt(pref.rating)
-        })),
+        ridePreferences: ridePreferences || [],
         profileComplete: true
       },
       { new: true }
