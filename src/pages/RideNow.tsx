@@ -62,7 +62,7 @@ const PARKS: Park[] = [
     id: 'ioa',
     name: 'Islands of Adventure',
     description: 'Journey through five islands featuring cutting-edge rides and attractions',
-    imageUrl: '/assets/ioa.jpg' // You'll need to add this image to your public assets
+    imageUrl: '/assets/ioalogo.png' // Updated image path
   }
 ];
 
