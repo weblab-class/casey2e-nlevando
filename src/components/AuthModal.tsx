@@ -62,7 +62,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    console.log('[AUTH] Environment:', import.meta.env.MODE);
+    console.log('[AUTH] Google Auth URL:', config.googleAuthUrl);
+    window.location.href = config.googleAuthUrl;
   };
 
   return (
