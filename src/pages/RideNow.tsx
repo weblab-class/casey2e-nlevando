@@ -582,7 +582,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   }, [userData]); // Re-run when userData changes
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (cooldownTime > 0) {
       timer = setInterval(() => {
         setCooldownTime((time: number) => time - 1);

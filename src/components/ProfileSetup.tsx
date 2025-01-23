@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ReactElement } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { getApiUrl } from '../config';
 
@@ -9,6 +9,7 @@ interface ProfileSetupProps {
     email: string;
     name: string;
     height?: number;
+    ridePreferences?: { rideId: number; rating: number; }[];
   };
 }
 
