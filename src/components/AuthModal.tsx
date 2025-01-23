@@ -62,7 +62,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = 'https://thrillcompass.onrender.com/api/auth/google';
   };
 
   return (
