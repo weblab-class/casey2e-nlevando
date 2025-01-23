@@ -157,7 +157,7 @@ app.get('/api/auth/google/callback',
 // Profile Routes
 app.post('/api/user/profile', verifyToken, async (req, res) => {
   try {
-    const { name, height, rideId, rating, ridePreferences } = req.body;
+    const { name, height, rideId, rating } = req.body;
 
     // If updating a single ride rating
     if (rideId !== undefined && rating !== undefined) {
@@ -181,19 +181,20 @@ app.post('/api/user/profile', verifyToken, async (req, res) => {
       return res.json(updatedUser);
     }
 
-    // If updating full profile
+    // If updating profile (name and height only)
     if (!name || !height) {
       return res.status(400).json({ error: 'Invalid profile data' });
     }
 
-    // Update user profile
+    // Use $set to only update specific fields
     const updatedUser = await User.findByIdAndUpdate(
       req.userId,
       {
-        name,
-        height: parseInt(height),
-        ridePreferences: ridePreferences || [],
-        profileComplete: true
+        $set: {
+          name,
+          height: parseInt(height),
+          profileComplete: true
+        }
       },
       { new: true }
     );
