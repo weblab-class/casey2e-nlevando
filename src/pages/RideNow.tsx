@@ -45,6 +45,10 @@ interface Park {
   name: string;
   description: string;
   imageUrl?: string;
+  hours: {
+    open: string;
+    close: string;
+  };
 }
 
 interface RideCardProps {
@@ -62,7 +66,11 @@ const PARKS: Park[] = [
     id: 'ioa',
     name: 'Islands of Adventure',
     description: 'Journey through five islands featuring cutting-edge rides and attractions',
-    imageUrl: '/assets/ioalogo.png' // Updated image path
+    imageUrl: '/assets/ioalogo.png',
+    hours: {
+      open: '9:00 AM',
+      close: '7:00 PM'
+    }
   }
 ];
 
@@ -646,13 +654,19 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               <h2 className="text-3xl font-bold text-white">
                 {PARKS.find(p => p.id === selectedPark)?.name}
               </h2>
-              <button 
-                onClick={() => setShowParkSelector(true)}
-                className="text-blue-400 hover:text-blue-300 text-sm mt-2 flex items-center gap-2"
-              >
-                <MapIcon size={20} />
-                Change Park
-              </button>
+              <div className="flex items-center gap-4 mt-2">
+                <button 
+                  onClick={() => setShowParkSelector(true)}
+                  className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-2"
+                >
+                  <MapIcon size={20} />
+                  Change Park
+                </button>
+                <span className="text-gray-300 text-sm flex items-center gap-2">
+                  <Clock size={16} className="text-blue-400" />
+                  Hours: {PARKS.find(p => p.id === selectedPark)?.hours.open} - {PARKS.find(p => p.id === selectedPark)?.hours.close}
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
