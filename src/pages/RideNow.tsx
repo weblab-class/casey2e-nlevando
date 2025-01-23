@@ -524,43 +524,59 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   useEffect(() => {
     if (!userData) return;  // Don't initialize if no user data
 
+    const userHeight = userData.height;
     const initialLands = [
       { 
         name: "Jurassic Park", 
-        rides: RIDES.filter(ride => ride.location === "Jurassic Park").map(ride => ({
+        rides: RIDES.filter(ride => 
+          ride.location === "Jurassic Park" && 
+          ride.heightRequirement <= userHeight
+        ).map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
       },
       { 
         name: "Marvel Super Hero Island", 
-        rides: RIDES.filter(ride => ride.location === "Marvel Super Hero Island").map(ride => ({
+        rides: RIDES.filter(ride => 
+          ride.location === "Marvel Super Hero Island" && 
+          ride.heightRequirement <= userHeight
+        ).map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
       },
       { 
         name: "Seuss Landing", 
-        rides: RIDES.filter(ride => ride.location === "Seuss Landing").map(ride => ({
+        rides: RIDES.filter(ride => 
+          ride.location === "Seuss Landing" && 
+          ride.heightRequirement <= userHeight
+        ).map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
       },
       { 
         name: "The Wizarding World of Harry Potter - Hogsmeade", 
-        rides: RIDES.filter(ride => ride.location === "The Wizarding World of Harry Potter - Hogsmeade").map(ride => ({
+        rides: RIDES.filter(ride => 
+          ride.location === "The Wizarding World of Harry Potter - Hogsmeade" && 
+          ride.heightRequirement <= userHeight
+        ).map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
       },
       { 
         name: "Toon Lagoon", 
-        rides: RIDES.filter(ride => ride.location === "Toon Lagoon").map(ride => ({
+        rides: RIDES.filter(ride => 
+          ride.location === "Toon Lagoon" && 
+          ride.heightRequirement <= userHeight
+        ).map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
       }
-    ];
+    ].filter(land => land.rides.length > 0); // Only show lands that have accessible rides
 
     setLands(initialLands);
   }, [userData]); // Re-run when userData changes
@@ -578,6 +594,9 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   }, [cooldownTime]);
 
   const updateWaitTimes = async (): Promise<void> => {
+    if (!userData) return;
+    const userHeight = userData.height;
+    
     // Remove cooldown check to allow immediate refresh when using Ride Now
     setIsLoading(true);
     try {
@@ -586,24 +605,26 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       
       setLands(prevLands => prevLands.map((land: Land) => ({
         ...land,
-        rides: land.rides.map((ride: Ride) => {
-          const updatedLand = data.lands.find((l: any) => 
-            l.name.toLowerCase().includes(land.name.toLowerCase())
-          );
-          
-          const updatedRide = updatedLand?.rides.find((r: any) => 
-            r.name.toLowerCase().includes(ride.name.toLowerCase())
-          );
-          
-          if (updatedRide) {
-            return {
-              ...ride,
-              waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
-            };
-          }
-          return ride;
-        })
-      })));
+        rides: land.rides
+          .filter(ride => ride.heightRequirement <= userHeight)
+          .map((ride: Ride) => {
+            const updatedLand = data.lands.find((l: any) => 
+              l.name.toLowerCase().includes(land.name.toLowerCase())
+            );
+            
+            const updatedRide = updatedLand?.rides.find((r: any) => 
+              r.name.toLowerCase().includes(ride.name.toLowerCase())
+            );
+            
+            if (updatedRide) {
+              return {
+                ...ride,
+                waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
+              };
+            }
+            return ride;
+          })
+      })).filter(land => land.rides.length > 0)); // Only keep lands with accessible rides
 
       const now = new Date();
       setLastUpdated(now);
@@ -646,6 +667,9 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
 
   // Add the suggestNextRide function
   const suggestNextRide = async () => {
+    if (!userData) return;
+    const userHeight = userData.height;
+    
     // First refresh wait times
     await updateWaitTimes();
     
@@ -654,8 +678,9 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
     let bestScore = -1;
     let secondBestScore = -1;
 
-    // Flatten all rides from all lands
-    const allRides = lands.flatMap(land => land.rides);
+    // Flatten all rides from all lands and filter by height
+    const allRides = lands.flatMap(land => land.rides)
+      .filter(ride => ride.heightRequirement <= userHeight);
 
     allRides.forEach(ride => {
       const userRating = ride.userRating || 3; // Default to 3 if no rating
