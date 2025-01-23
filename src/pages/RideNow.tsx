@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw, Ruler, Info, Accessibility, FlipHorizontal, Settings, User } from 'lucide-react';
+import type { FC, ReactElement, MouseEvent } from 'react';
+import { Clock, MapPin, Frown, Meh, Smile, SmilePlus, Heart, RefreshCw, Ruler, Info, Accessibility, FlipHorizontal, Settings, User, MapIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import ProfileSetup from '../components/ProfileSetup';
 
 interface Ride {
@@ -37,10 +39,45 @@ interface UserData {
   profileComplete: boolean;
 }
 
-const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => void }> = ({ ride, onRate }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+interface Park {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
 
-  const getThrillLevelText = (level: number) => {
+interface RideCardProps {
+  ride: Ride;
+  onRate: (id: number, rating: number) => void;
+}
+
+interface RideNowProps {
+  userData?: UserData;
+  onProfileUpdate?: () => void;
+}
+
+const PARKS: Park[] = [
+  {
+    id: 'ioa',
+    name: 'Islands of Adventure',
+    description: 'Journey through five islands featuring cutting-edge rides and attractions',
+    imageUrl: '/assets/ioa.jpg' // You'll need to add this image to your public assets
+  }
+];
+
+interface IconProps {
+  className?: string;
+  size?: number;
+}
+
+const RideCard: FC<RideCardProps> = ({ ride, onRate }): ReactElement => {
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+
+  const handleClick = (e: MouseEvent<HTMLDivElement>): void => {
+    setIsFlipped(!isFlipped);
+  };
+
+  const getThrillLevelText = (level: number): string => {
     switch (level) {
       case 1: return "Mild - Perfect for all ages";
       case 2: return "Moderate - Some small thrills";
@@ -51,7 +88,7 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
     }
   };
 
-  const getRatingIcon = (rating: number, isSelected: boolean, size: number = 24) => {
+  const getRatingIcon = (rating: number, isSelected: boolean, size: number = 24): ReactElement => {
     const className = `h-${size} w-${size} ${isSelected ? 'text-yellow-400' : 'text-gray-400'} transition-colors`;
     switch (rating) {
       case 1: return <Frown className={className} />;
@@ -59,14 +96,14 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
       case 3: return <Smile className={className} />;
       case 4: return <SmilePlus className={className} />;
       case 5: return <Heart className={className} />;
-      default: return null;
+      default: return <></>;
     }
   };
 
   return (
     <div 
       className="relative h-[400px] perspective-1000"
-      onClick={() => setIsFlipped(!isFlipped)}
+      onClick={handleClick}
     >
       <div className={`absolute w-full h-full transition-transform duration-500 transform-style-preserve-3d cursor-pointer ${
         isFlipped ? 'rotate-y-180' : ''
@@ -167,11 +204,6 @@ const RideCard: React.FC<{ ride: Ride; onRate: (id: number, rating: number) => v
     </div>
   );
 };
-
-interface RideNowProps {
-  userData?: UserData;
-  onProfileUpdate?: () => void;
-}
 
 const RIDES: Ride[] = [
   // Jurassic Park
@@ -418,7 +450,9 @@ const RIDES: Ride[] = [
   }
 ];
 
-const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
+const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement => {
+  const [selectedPark, setSelectedPark] = useState<string>('ioa');
+  const [showParkSelector, setShowParkSelector] = useState<boolean>(true);
   const [lands, setLands] = useState<Land[]>([
     { 
       name: "Jurassic Park", 
@@ -457,31 +491,29 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
     }
   ]);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [cooldownTime, setCooldownTime] = useState<number>(0);
-  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState<boolean>(false);
   const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
 
-  // Add cooldown timer effect
   useEffect(() => {
-    let timer: number | undefined;
+    let timer: NodeJS.Timeout | undefined;
     if (cooldownTime > 0) {
-      timer = window.setInterval(() => {
-        setCooldownTime(time => time - 1);
+      timer = setInterval(() => {
+        setCooldownTime((time: number) => time - 1);
       }, 1000);
     }
     return () => {
-      if (timer) window.clearInterval(timer);
+      if (timer) clearInterval(timer);
     };
   }, [cooldownTime]);
 
-  // Update lands when userData changes
   useEffect(() => {
     if (userData?.ridePreferences) {
-      setLands(prevLands => prevLands.map(land => ({
+      setLands(prevLands => prevLands.map((land: Land) => ({
         ...land,
-        rides: land.rides.map(ride => ({
+        rides: land.rides.map((ride: Ride) => ({
           ...ride,
           userRating: userData.ridePreferences.find((pref: RidePreference) => pref.rideId === ride.id)?.rating || null
         }))
@@ -489,7 +521,7 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
     }
   }, [userData]);
 
-  const updateWaitTimes = async () => {
+  const updateWaitTimes = async (): Promise<void> => {
     if (cooldownTime > 0) return;
     
     setIsLoading(true);
@@ -497,10 +529,9 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
       const response = await fetch('/api/queue-times');
       const data = await response.json();
       
-      // Update the wait times in our lands data
-      setLands(prevLands => prevLands.map(land => ({
+      setLands(prevLands => prevLands.map((land: Land) => ({
         ...land,
-        rides: land.rides.map(ride => {
+        rides: land.rides.map((ride: Ride) => {
           const updatedLand = data.lands.find((l: any) => 
             l.name.toLowerCase().includes(land.name.toLowerCase())
           );
@@ -519,12 +550,9 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
         })
       })));
 
-      // Update timestamp and set cooldown
       const now = new Date();
-      setLastUpdated(
-        `${now.toLocaleTimeString()} on ${now.toLocaleDateString()}`
-      );
-      setCooldownTime(60); // 1 minute cooldown
+      setLastUpdated(now);
+      setCooldownTime(60);
     } catch (error) {
       console.error('Failed to fetch wait times:', error);
     } finally {
@@ -532,10 +560,10 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
     }
   };
 
-  const handleRating = (rideId: number, rating: number) => {
-    setLands(lands.map(land => ({
+  const handleRating = (rideId: number, rating: number): void => {
+    setLands(lands.map((land: Land) => ({
       ...land,
-      rides: land.rides.map(ride => 
+      rides: land.rides.map((ride: Ride) => 
         ride.id === rideId ? { ...ride, userRating: rating } : ride
       )
     })));
@@ -580,83 +608,101 @@ const RideNow: React.FC<RideNowProps> = ({ userData, onProfileUpdate }) => {
     setSuggestedRide(bestRide);
   };
 
+  const handleParkSelect = (parkId: string): void => {
+    setSelectedPark(parkId);
+    setShowParkSelector(false);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* User Profile Section */}
-      {userData && (
-        <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-500 rounded-full p-3">
-                <User className="h-6 w-6 text-white" />
+      {showParkSelector && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Select a Park</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PARKS.map((park) => (
+              <div
+                key={park.id}
+                className="bg-white/10 backdrop-blur-md rounded-lg p-4 cursor-pointer hover:bg-white/20 transition-colors"
+                onClick={() => handleParkSelect(park.id)}
+              >
+                {park.imageUrl && (
+                  <img
+                    src={park.imageUrl}
+                    alt={park.name}
+                    className="w-full h-40 object-cover rounded-lg mb-4"
+                  />
+                )}
+                <h3 className="text-xl font-semibold text-white mb-2">{park.name}</h3>
+                <p className="text-gray-300">{park.description}</p>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">{userData.name}</h2>
-                <p className="text-gray-300">Height: {Math.floor(userData.height / 12)}'{userData.height % 12}"</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowProfileEdit(true)}
-              className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-            >
-              <Settings className="h-5 w-5" />
-              <span>Edit Profile</span>
-            </button>
+            ))}
           </div>
         </div>
       )}
-
-      {/* Wait Times Header */}
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Universal's Islands of Adventure</h1>
-          <div className="flex gap-4">
-            <button
-              onClick={updateWaitTimes}
-              disabled={isLoading || cooldownTime > 0}
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-              Check Wait Times
-            </button>
-            <button
-              onClick={suggestNextRide}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-              Ride Now!
-            </button>
-          </div>
+      
+      {!showParkSelector && (
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-2xl font-bold text-white">
+            {PARKS.find(park => park.id === selectedPark)?.name}
+          </h2>
+          <button
+            onClick={() => setShowParkSelector(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+          >
+            <MapIcon size={20} />
+            Change Park
+          </button>
         </div>
-        {lastUpdated && (
-          <div className="text-gray-400 text-sm flex flex-col items-end gap-1">
-            <span>Powered by Queue-Times.com</span>
-            <span>Last updated: {lastUpdated}</span>
-            {cooldownTime > 0 && (
-              <span className="text-red-400">
-                Next refresh available in: {Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')}
-              </span>
-            )}
-          </div>
-        )}
-        {suggestedRide && (
-          <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mt-4">
-            <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-lg text-white">{suggestedRide.name}</p>
-                <p className="text-sm text-gray-300">Location: {suggestedRide.location}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg text-white">
-                  {suggestedRide.waitTime === 'Closed' ? 'Closed' : `${suggestedRide.waitTime} min wait`}
-                </p>
-                {suggestedRide.userRating && (
-                  <p className="text-sm text-gray-300">Your Rating: {suggestedRide.userRating}/5</p>
-                )}
+      )}
+
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-white">
+            {PARKS.find(p => p.id === selectedPark)?.name}
+          </h2>
+          <button 
+            onClick={updateWaitTimes}
+            className="text-blue-400 hover:text-blue-300 text-sm mt-2 flex items-center"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh Times</span>
+          </button>
+        </div>
+        
+        {/* Wait Times Header */}
+        <div className="flex flex-col gap-4 mb-8">
+          {lastUpdated && (
+            <div className="text-gray-400 text-sm flex flex-col items-end gap-1">
+              <span>Powered by Queue-Times.com</span>
+              <span>Last updated: {lastUpdated.toLocaleTimeString()} on {lastUpdated.toLocaleDateString()}</span>
+              {cooldownTime > 0 && (
+                <span className="text-red-400">
+                  Next refresh available in: {Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')}
+                </span>
+              )}
+            </div>
+          )}
+          {suggestedRide && (
+            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mt-4">
+              <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg text-white">{suggestedRide.name}</p>
+                  <p className="text-sm text-gray-300">Location: {suggestedRide.location}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg text-white">
+                    {suggestedRide.waitTime === 'Closed' ? 'Closed' : `${suggestedRide.waitTime} min wait`}
+                  </p>
+                  {suggestedRide.userRating && (
+                    <p className="text-sm text-gray-300">Your Rating: {suggestedRide.userRating}/5</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Lands and Rides Grid */}
