@@ -1,5 +1,5 @@
 // Environment-specific configuration
-const isDevelopment = import.meta.env.MODE === 'development';
+const isDevelopment = import.meta.env.MODE === 'development' || window.location.hostname === 'localhost';
 const BASE_URL = isDevelopment ? 'http://localhost:5000' : 'https://thrillcompass.onrender.com';
 const CLIENT_URL = isDevelopment ? 'http://localhost:3000' : 'https://thrillcompass.onrender.com';
 
@@ -32,7 +32,8 @@ if (config.debug) {
     googleCallbackUrl: config.googleCallbackUrl,
     clientUrl: config.clientUrl,
     isDevelopment,
-    mode: import.meta.env.MODE
+    mode: import.meta.env.MODE,
+    hostname: window.location.hostname
   });
 }
 
