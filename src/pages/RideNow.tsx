@@ -670,39 +670,77 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
     if (!userData) return;
     const userHeight = userData.height;
     
-    // First refresh wait times
-    await updateWaitTimes();
-    
-    let bestRide: Ride | null = null;
-    let runnerUpRide: Ride | null = null;
-    let bestScore = -1;
-    let secondBestScore = -1;
+    try {
+      // First refresh wait times and ensure it completes
+      setIsLoading(true);
+      const response = await fetch('/api/queue-times');
+      const data = await response.json();
+      
+      // Create updated lands with fresh wait times
+      const updatedLands = lands.map((land: Land) => ({
+        ...land,
+        rides: land.rides
+          .filter(ride => ride.heightRequirement <= userHeight)
+          .map((ride: Ride) => {
+            const updatedLand = data.lands.find((l: any) => 
+              l.name.toLowerCase().includes(land.name.toLowerCase())
+            );
+            
+            const updatedRide = updatedLand?.rides.find((r: any) => 
+              r.name.toLowerCase().includes(ride.name.toLowerCase())
+            );
+            
+            if (updatedRide) {
+              return {
+                ...ride,
+                waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
+              };
+            }
+            return ride;
+          })
+      })).filter(land => land.rides.length > 0);
 
-    // Flatten all rides from all lands and filter by height
-    const allRides = lands.flatMap(land => land.rides)
-      .filter(ride => ride.heightRequirement <= userHeight);
+      // Update the state
+      setLands(updatedLands);
+      const now = new Date();
+      setLastUpdated(now);
 
-    allRides.forEach(ride => {
-      const userRating = ride.userRating || 3; // Default to 3 if no rating
-      if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
-        const score = calculateRideScore(userRating, ride.waitTime);
-        if (score > bestScore) {
-          // Move current best to runner up
-          runnerUpRide = bestRide;
-          secondBestScore = bestScore;
-          // Set new best
-          bestScore = score;
-          bestRide = ride;
-        } else if (score > secondBestScore) {
-          // Update runner up
-          secondBestScore = score;
-          runnerUpRide = ride;
+      // Use the fresh data to find the best rides
+      let bestRide: Ride | null = null;
+      let runnerUpRide: Ride | null = null;
+      let bestScore = -1;
+      let secondBestScore = -1;
+
+      // Get rides from the fresh data
+      const allRides = updatedLands.flatMap(land => land.rides)
+        .filter(ride => ride.heightRequirement <= userHeight);
+
+      allRides.forEach(ride => {
+        const userRating = ride.userRating || 3; // Default to 3 if no rating
+        if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
+          const score = calculateRideScore(userRating, ride.waitTime);
+          if (score > bestScore) {
+            // Move current best to runner up
+            runnerUpRide = bestRide;
+            secondBestScore = bestScore;
+            // Set new best
+            bestScore = score;
+            bestRide = ride;
+          } else if (score > secondBestScore) {
+            // Update runner up
+            secondBestScore = score;
+            runnerUpRide = ride;
+          }
         }
-      }
-    });
+      });
 
-    setSuggestedRide(bestRide);
-    setRunnerUpRide(runnerUpRide);
+      setSuggestedRide(bestRide);
+      setRunnerUpRide(runnerUpRide);
+    } catch (error) {
+      console.error('Failed to fetch wait times:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleParkSelect = (parkId: string): void => {
