@@ -451,7 +451,7 @@ const RIDES: Ride[] = [
 ];
 
 const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement => {
-  const [selectedPark, setSelectedPark] = useState<string>('ioa');
+  const [selectedPark, setSelectedPark] = useState<string>('');
   const [showParkSelector, setShowParkSelector] = useState<boolean>(true);
   const [lands, setLands] = useState<Land[]>([
     { 
@@ -615,7 +615,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {showParkSelector && (
+      {showParkSelector ? (
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">Select a Park</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -638,53 +638,46 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
             ))}
           </div>
         </div>
-      )}
-      
-      {!showParkSelector && (
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-white">
-            {PARKS.find(park => park.id === selectedPark)?.name}
-          </h2>
-          <button
-            onClick={() => setShowParkSelector(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-          >
-            <MapIcon size={20} />
-            Change Park
-          </button>
-        </div>
-      )}
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-white">
+                {PARKS.find(p => p.id === selectedPark)?.name}
+              </h2>
+              <button 
+                onClick={() => setShowParkSelector(true)}
+                className="text-blue-400 hover:text-blue-300 text-sm mt-2 flex items-center gap-2"
+              >
+                <MapIcon size={20} />
+                Change Park
+              </button>
+            </div>
 
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-3xl font-bold text-white">
-            {PARKS.find(p => p.id === selectedPark)?.name}
-          </h2>
-          <button 
-            onClick={updateWaitTimes}
-            className="text-blue-400 hover:text-blue-300 text-sm mt-2 flex items-center"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh Times</span>
-          </button>
-        </div>
-        
-        {/* Wait Times Header */}
-        <div className="flex flex-col gap-4 mb-8">
-          {lastUpdated && (
-            <div className="text-gray-400 text-sm flex flex-col items-end gap-1">
-              <span>Powered by Queue-Times.com</span>
-              <span>Last updated: {lastUpdated.toLocaleTimeString()} on {lastUpdated.toLocaleDateString()}</span>
+            <button 
+              onClick={updateWaitTimes}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+              disabled={isLoading || cooldownTime > 0}
+            >
+              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh Times</span>
               {cooldownTime > 0 && (
-                <span className="text-red-400">
-                  Next refresh available in: {Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')}
-                </span>
+                <span>({Math.floor(cooldownTime / 60)}:{(cooldownTime % 60).toString().padStart(2, '0')})</span>
               )}
+            </button>
+          </div>
+
+          {/* Wait Times Info */}
+          {lastUpdated && (
+            <div className="text-gray-400 text-sm mb-8">
+              <p>Powered by Queue-Times.com</p>
+              <p>Last updated: {lastUpdated.toLocaleTimeString()} on {lastUpdated.toLocaleDateString()}</p>
             </div>
           )}
+
+          {/* Suggested Ride */}
           {suggestedRide && (
-            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mt-4">
+            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-8">
               <h3 className="text-xl font-bold text-white mb-2">Suggested Next Ride:</h3>
               <div className="flex items-center justify-between">
                 <div>
@@ -702,20 +695,20 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Lands and Rides Grid */}
-      {lands.map((land) => (
-        <div key={land.name} className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">{land.name}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {land.rides.map((ride) => (
-              <RideCard key={ride.id} ride={ride} onRate={handleRating} />
-            ))}
-          </div>
-        </div>
-      ))}
+          {/* Lands and Rides Grid */}
+          {lands.map((land) => (
+            <div key={land.name} className="mb-12">
+              <h2 className="text-2xl font-bold text-white mb-6">{land.name}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {land.rides.map((ride) => (
+                  <RideCard key={ride.id} ride={ride} onRate={handleRating} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       {/* Profile Edit Modal */}
       {showProfileEdit && userData && (

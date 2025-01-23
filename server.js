@@ -228,22 +228,20 @@ mongoose.connect(process.env.MONGODB_URI, {
   socketTimeoutMS: 45000,
   connectTimeoutMS: 30000,
   waitQueueTimeoutMS: 30000,
+  retryWrites: true,
+  w: 'majority',
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 })
-.then(async () => {
-  console.log('Connected to MongoDB');
-  try {
-    await mongoose.connection.db.collection('users').dropIndex('username_1');
-    console.log('Dropped username index');
-  } catch (error) {
-    console.log('No username index to drop');
-  }
+.then(() => {
+  console.log('[MongoDB] Connected successfully');
   // Use port 5000 by default for the backend
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`[SERVER] Running on port ${PORT}`);
   });
 })
 .catch(err => {
-  console.error('MongoDB connection error:', err);
+  console.error('[MongoDB] Connection error:', err);
   process.exit(1);
 }); 
