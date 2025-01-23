@@ -62,13 +62,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
   };
 
   const handleGoogleLogin = () => {
-    console.log('[AUTH] Debug Info:', {
+    /* console.log('[AUTH] Debug Info:', {
       environment: import.meta.env.MODE,
       hostname: window.location.hostname,
       googleAuthUrl: config.googleAuthUrl,
       isDevelopment: import.meta.env.MODE === 'development' || window.location.hostname === 'localhost',
       baseUrl: config.apiUrl
-    });
+    }); */
     window.location.href = config.googleAuthUrl;
   };
 

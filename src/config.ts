@@ -25,7 +25,7 @@ export const config: Config = {
 export const getApiUrl = (path?: string): string => path ? `${config.apiUrl}${path}` : config.apiUrl;
 
 // Log configuration in development
-if (config.debug) {
+/* if (config.debug) {
   console.log('[CONFIG] App configuration:', {
     apiUrl: config.apiUrl,
     googleAuthUrl: config.googleAuthUrl,
@@ -35,6 +35,6 @@ if (config.debug) {
     mode: import.meta.env.MODE,
     hostname: window.location.hostname
   });
-}
+} */
 
 export default config; 
