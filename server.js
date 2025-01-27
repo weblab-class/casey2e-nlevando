@@ -224,24 +224,20 @@ app.get('/api/user/profile', verifyToken, async (req, res) => {
 });
 
 // Queue Times Route
-app.get('/api/queue-times', async (req, res) => {
+app.get('/api/queue-times/:parkId', async (req, res) => {
   try {
-    const response = await fetch('https://queue-times.com/parks/64/queue_times.json');
+    const parkId = req.params.parkId;
+    console.log(`[Queue Times] Fetching data for park ${parkId}`);
+    const response = await fetch(`https://queue-times.com/parks/${parkId}/queue_times.json`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch queue times for park ${parkId}`);
+    }
     const data = await response.json();
     res.json(data);
   } catch (error) {
     console.error('Queue times error:', error);
     res.status(500).json({ error: 'Failed to fetch queue times' });
   }
-});
-
-// Move the catch-all route before MongoDB connection
-app.get('*', (req, res) => {
-  // Don't serve the frontend for API routes
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
-  }
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Connect to MongoDB with robust error handling
@@ -266,4 +262,13 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => {
   console.error('[MongoDB] Connection error:', err);
   process.exit(1);
+});
+
+// Move the catch-all route to the end
+app.get('*', (req, res) => {
+  // Don't serve the frontend for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 }); 

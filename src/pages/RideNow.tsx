@@ -62,18 +62,67 @@ interface RideNowProps {
   onProfileUpdate?: () => void;
 }
 
-const PARKS: Park[] = [
-  {
+// Add a type for park IDs to make it easier to add more parks
+type ParkId = 'ioa' | 'usf';
+
+// Add a type for Queue Times API IDs
+interface ParkQueueTimesConfig {
+  id: string;
+  queueTimesId: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  hours: {
+    open: string;
+    close: string;
+  };
+  lands: string[];
+}
+
+// Update PARKS to include all necessary configuration
+const PARK_CONFIG: Record<ParkId, ParkQueueTimesConfig> = {
+  'ioa': {
     id: 'ioa',
+    queueTimesId: '64',
     name: 'Islands of Adventure',
     description: 'Journey through five islands featuring cutting-edge rides and attractions',
     imageUrl: '/assets/ioalogo.png',
     hours: {
       open: '9:00 AM',
       close: '7:00 PM'
-    }
+    },
+    lands: [
+      "Jurassic Park",
+      "Marvel Super Hero Island",
+      "Seuss Landing",
+      "The Wizarding World of Harry Potter - Hogsmeade",
+      "Toon Lagoon"
+    ]
+  },
+  'usf': {
+    id: 'usf',
+    queueTimesId: '63',
+    name: 'Universal Studios Florida',
+    description: 'Movie magic comes alive with thrilling attractions and entertainment',
+    imageUrl: '/assets/usflogo.png',
+    hours: {
+      open: '9:00 AM',
+      close: '7:00 PM'
+    },
+    lands: [
+      "Production Central",
+      "New York",
+      "San Francisco",
+      "The Wizarding World of Harry Potter - Diagon Alley",
+      "World Expo",
+      "Springfield",
+      "Woody Woodpecker's KidZone"
+    ]
   }
-];
+};
+
+// Convert config to array for park selector
+const PARKS = Object.values(PARK_CONFIG);
 
 interface IconProps {
   className?: string;
@@ -509,8 +558,185 @@ const RIDES: Ride[] = [
   }
 ];
 
+// Add Universal Studios Florida rides
+const USF_RIDES: Ride[] = [
+  // Production Central
+  {
+    id: 101,
+    name: "Hollywood Rip Ride Rockit",
+    waitTime: 60,
+    location: "Production Central",
+    heightRequirement: 51,
+    thrillLevel: 5 as const,
+    features: {
+      goesUpsideDown: true,
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "High-speed roller coaster with music selection"
+    },
+    userRating: null
+  },
+  {
+    id: 102,
+    name: "Despicable Me Minion Mayhem",
+    waitTime: 45,
+    location: "Production Central",
+    heightRequirement: 40,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "3D motion simulator ride"
+    },
+    userRating: null
+  },
+
+  // New York
+  {
+    id: 103,
+    name: "Revenge of the Mummy",
+    waitTime: 35,
+    location: "New York",
+    heightRequirement: 48,
+    thrillLevel: 4 as const,
+    features: {
+      goesUpsideDown: false,
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "Indoor roller coaster with special effects"
+    },
+    userRating: null
+  },
+  {
+    id: 104,
+    name: "Race Through New York Starring Jimmy Fallon",
+    waitTime: 25,
+    location: "New York",
+    heightRequirement: 40,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "4D motion simulator experience"
+    },
+    userRating: null
+  },
+
+  // San Francisco
+  {
+    id: 105,
+    name: "Fast & Furious - Supercharged",
+    waitTime: 40,
+    location: "San Francisco",
+    heightRequirement: 40,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "High-speed virtual reality experience"
+    },
+    userRating: null
+  },
+
+  // The Wizarding World of Harry Potter - Diagon Alley
+  {
+    id: 106,
+    name: "Harry Potter and the Escape from Gringotts",
+    waitTime: 75,
+    location: "The Wizarding World of Harry Potter - Diagon Alley",
+    heightRequirement: 42,
+    thrillLevel: 4 as const,
+    features: {
+      goesUpsideDown: false,
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      mustTransfer: true,
+      specialNotes: "3D motion-based steel roller coaster dark ride"
+    },
+    userRating: null
+  },
+
+  // World Expo
+  {
+    id: 107,
+    name: "MEN IN BLACK Alien Attack",
+    waitTime: 30,
+    location: "World Expo",
+    heightRequirement: 42,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Interactive dark ride with spinning vehicles"
+    },
+    userRating: null
+  },
+  {
+    id: 108,
+    name: "The Simpsons Ride",
+    waitTime: 35,
+    location: "World Expo",
+    heightRequirement: 40,
+    thrillLevel: 4 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Motion simulator with Simpsons theming"
+    },
+    userRating: null
+  },
+
+  // Springfield
+  {
+    id: 109,
+    name: "Kang & Kodos' Twirl 'n' Hurl",
+    waitTime: 15,
+    location: "Springfield",
+    heightRequirement: 36,
+    thrillLevel: 2 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Spinning ride with Simpsons theming"
+    },
+    userRating: null
+  },
+
+  // Woody Woodpecker's KidZone
+  {
+    id: 110,
+    name: "E.T. Adventure",
+    waitTime: 30,
+    location: "Woody Woodpecker's KidZone",
+    heightRequirement: 34,
+    thrillLevel: 2 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Classic dark ride featuring E.T."
+    },
+    userRating: null
+  },
+  {
+    id: 111,
+    name: "Woody Woodpecker's Nuthouse Coaster",
+    waitTime: 20,
+    location: "Woody Woodpecker's KidZone",
+    heightRequirement: 36,
+    thrillLevel: 3 as const,
+    features: {
+      isWaterRide: false,
+      hasAccessibleVehicle: true,
+      specialNotes: "Family-friendly roller coaster"
+    },
+    userRating: null
+  }
+];
+
 const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement => {
-  const [selectedPark, setSelectedPark] = useState<string>('');
+  const [selectedPark, setSelectedPark] = useState<ParkId>('ioa');
   const [showParkSelector, setShowParkSelector] = useState<boolean>(true);
   const [lands, setLands] = useState<Land[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -520,116 +746,101 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
   const [suggestedRide, setSuggestedRide] = useState<Ride | null>(null);
   const [runnerUpRide, setRunnerUpRide] = useState<Ride | null>(null);
 
+  // Get current park configuration
+  const currentParkConfig = PARK_CONFIG[selectedPark];
+
   // Initialize lands with user preferences
   useEffect(() => {
-    if (!userData) return;  // Don't initialize if no user data
+    if (!userData) return;
 
     const userHeight = userData.height;
-    const initialLands = [
-      { 
-        name: "Jurassic Park", 
-        rides: RIDES.filter(ride => 
-          ride.location === "Jurassic Park" && 
+    const parkRides = selectedPark === 'usf' ? USF_RIDES : RIDES;
+    
+    const initialLands = currentParkConfig.lands.map(landName => ({
+      name: landName,
+      rides: parkRides
+        .filter(ride => 
+          ride.location === landName && 
           ride.heightRequirement <= userHeight
-        ).map(ride => ({
+        )
+        .map(ride => ({
           ...ride,
           userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
         }))
-      },
-      { 
-        name: "Marvel Super Hero Island", 
-        rides: RIDES.filter(ride => 
-          ride.location === "Marvel Super Hero Island" && 
-          ride.heightRequirement <= userHeight
-        ).map(ride => ({
-          ...ride,
-          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
-        }))
-      },
-      { 
-        name: "Seuss Landing", 
-        rides: RIDES.filter(ride => 
-          ride.location === "Seuss Landing" && 
-          ride.heightRequirement <= userHeight
-        ).map(ride => ({
-          ...ride,
-          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
-        }))
-      },
-      { 
-        name: "The Wizarding World of Harry Potter - Hogsmeade", 
-        rides: RIDES.filter(ride => 
-          ride.location === "The Wizarding World of Harry Potter - Hogsmeade" && 
-          ride.heightRequirement <= userHeight
-        ).map(ride => ({
-          ...ride,
-          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
-        }))
-      },
-      { 
-        name: "Toon Lagoon", 
-        rides: RIDES.filter(ride => 
-          ride.location === "Toon Lagoon" && 
-          ride.heightRequirement <= userHeight
-        ).map(ride => ({
-          ...ride,
-          userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
-        }))
-      }
-    ].filter(land => land.rides.length > 0); // Only show lands that have accessible rides
+    })).filter(land => land.rides.length > 0);
 
     setLands(initialLands);
-  }, [userData]); // Re-run when userData changes
+  }, [userData, selectedPark]);
 
   useEffect(() => {
+    console.log('Cooldown timer changed:', cooldownTime); // Debug log
     let timer: ReturnType<typeof setInterval> | undefined;
     if (cooldownTime > 0) {
+      console.log('Starting cooldown interval'); // Debug log
       timer = setInterval(() => {
-        setCooldownTime((time: number) => time - 1);
+        setCooldownTime((time: number) => {
+          console.log('Updating cooldown time:', time - 1); // Debug log
+          return time - 1;
+        });
       }, 1000);
     }
     return () => {
-      if (timer) clearInterval(timer);
+      if (timer) {
+        console.log('Clearing cooldown interval'); // Debug log
+        clearInterval(timer);
+      }
     };
   }, [cooldownTime]);
 
   const updateWaitTimes = async (): Promise<void> => {
-    if (!userData) return;
+    console.log('updateWaitTimes called');
+    if (!userData) {
+      console.log('No user data, returning');
+      return;
+    }
     const userHeight = userData.height;
     
-    // Remove cooldown check to allow immediate refresh when using Ride Now
     setIsLoading(true);
     try {
-      const response = await fetch('/api/queue-times');
-      const data = await response.json();
+      const endpoint = `/api/queue-times/${currentParkConfig.queueTimesId}`;
+      console.log('Fetching from:', getApiUrl(endpoint));
+      const response = await fetch(getApiUrl(endpoint));
+      if (!response.ok) throw new Error('Failed to fetch wait times');
       
-      setLands(prevLands => prevLands.map((land: Land) => ({
-        ...land,
-        rides: land.rides
-          .filter(ride => ride.heightRequirement <= userHeight)
-          .map((ride: Ride) => {
-            const updatedLand = data.lands.find((l: any) => 
-              l.name.toLowerCase().includes(land.name.toLowerCase())
-            );
-            
-            const updatedRide = updatedLand?.rides.find((r: any) => 
-              r.name.toLowerCase().includes(ride.name.toLowerCase())
-            );
-            
-            if (updatedRide) {
-              return {
-                ...ride,
-                waitTime: updatedRide.is_open ? updatedRide.wait_time : 'Closed'
-              };
-            }
-            return ride;
-          })
-      })).filter(land => land.rides.length > 0)); // Only keep lands with accessible rides
+      const data = await response.json();
+      console.log('Queue Times API Response:', data);
+      
+      const parkRides = selectedPark === 'usf' ? USF_RIDES : RIDES;
+      
+      const updatedLands = currentParkConfig.lands.map(landName => ({
+        name: landName,
+        rides: parkRides
+          .filter(ride => ride.location === landName && ride.heightRequirement <= userHeight)
+          .map(ride => {
+            // Find the matching ride in the API response
+            const apiRide = data.lands
+              ?.flatMap((l: any) => l.rides || [])
+              ?.find((r: any) => {
+                const apiName = r.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const rideName = ride.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return apiName.includes(rideName) || rideName.includes(apiName);
+              });
 
+            console.log(`Matching ride ${ride.name}:`, apiRide); // Debug log
+
+            return {
+              ...ride,
+              waitTime: apiRide?.is_open ? apiRide.wait_time : 'Closed',
+              userRating: userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || null
+            };
+          })
+      })).filter(land => land.rides.length > 0);
+
+      setLands(updatedLands);
       const now = new Date();
       setLastUpdated(now);
-      // Only set cooldown if not called from suggestNextRide
       if (!suggestNextRide.caller) {
+        console.log('Setting cooldown timer'); // Debug log
         setCooldownTime(60);
       }
     } catch (error) {
@@ -674,73 +885,33 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
     return ratingScore + waitTimeScore;
   };
 
-  // Add the suggestNextRide function
+  // Add effect to fetch initial wait times when park is selected
+  useEffect(() => {
+    if (!showParkSelector && userData) {
+      updateWaitTimes();
+    }
+  }, [showParkSelector, selectedPark]);
+
+  const handleParkSelect = (parkId: ParkId): void => {
+    setSelectedPark(parkId);
+    setShowParkSelector(false);
+    // Reset states when changing parks
+    setSuggestedRide(null);
+    setRunnerUpRide(null);
+    setLastUpdated(null);
+    setCooldownTime(0);
+  };
+
+  // Update the suggestNextRide function to ensure it updates wait times
   const suggestNextRide = async () => {
     if (!userData) return;
-    const userHeight = userData.height;
     
     try {
-      // First refresh wait times and ensure it completes
-      setIsLoading(true);
-      const response = await fetch('/api/queue-times');
-      const data = await response.json();
+      // First update wait times
+      await updateWaitTimes();
       
-      // Get all rides with fresh wait times, preserving existing ratings
-      const allRidesWithUpdatedTimes = RIDES
-        .filter(ride => ride.heightRequirement <= userHeight)
-        .map(ride => {
-          // Find the matching land and ride in the API response
-          const updatedLand = data.lands.find((l: any) => 
-            l.name.toLowerCase().includes(ride.location.toLowerCase())
-          );
-          
-          const updatedRide = updatedLand?.rides.find((r: any) => 
-            r.name.toLowerCase().includes(ride.name.toLowerCase())
-          );
-
-          // Find the existing ride in current lands to preserve rating
-          const existingRide = lands.flatMap(land => land.rides)
-            .find(r => r.id === ride.id);
-          
-          return {
-            ...ride,
-            waitTime: updatedRide?.is_open ? updatedRide.wait_time : 'Closed',
-            // Preserve existing rating if available, otherwise check userData
-            userRating: existingRide?.userRating || 
-                       userData.ridePreferences?.find(pref => pref.rideId === ride.id)?.rating || 
-                       null
-          };
-        });
-
-      // Update the lands state
-      const updatedLands = [
-        { 
-          name: "Jurassic Park", 
-          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Jurassic Park")
-        },
-        { 
-          name: "Marvel Super Hero Island", 
-          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Marvel Super Hero Island")
-        },
-        { 
-          name: "Seuss Landing", 
-          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Seuss Landing")
-        },
-        { 
-          name: "The Wizarding World of Harry Potter - Hogsmeade", 
-          rides: allRidesWithUpdatedTimes.filter(ride => 
-            ride.location === "The Wizarding World of Harry Potter - Hogsmeade"
-          )
-        },
-        { 
-          name: "Toon Lagoon", 
-          rides: allRidesWithUpdatedTimes.filter(ride => ride.location === "Toon Lagoon")
-        }
-      ].filter(land => land.rides.length > 0);
-
-      setLands(updatedLands);
-      const now = new Date();
-      setLastUpdated(now);
+      const parkRides = selectedPark === 'usf' ? USF_RIDES : RIDES;
+      const allRidesWithUpdatedTimes = lands.flatMap(land => land.rides);
 
       // Find best rides using the fresh data
       let bestRide: Ride | null = null;
@@ -748,21 +919,16 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       let bestScore = -1;
       let secondBestScore = -1;
 
-      // Calculate scores using the fresh data
       allRidesWithUpdatedTimes.forEach(ride => {
-        const userRating = ride.userRating || 3; // Default to 3 if no rating
+        const userRating = ride.userRating || 3;
         if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
           const score = calculateRideScore(userRating, ride.waitTime);
-          console.log(`Ride: ${ride.name}, Rating: ${userRating}, Wait: ${ride.waitTime}, Score: ${score}`);
           if (score > bestScore) {
-            // Move current best to runner up
             runnerUpRide = bestRide;
             secondBestScore = bestScore;
-            // Set new best
             bestScore = score;
             bestRide = ride;
           } else if (score > secondBestScore) {
-            // Update runner up
             secondBestScore = score;
             runnerUpRide = ride;
           }
@@ -772,15 +938,8 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       setSuggestedRide(bestRide);
       setRunnerUpRide(runnerUpRide);
     } catch (error) {
-      console.error('Failed to fetch wait times:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to suggest next ride:', error);
     }
-  };
-
-  const handleParkSelect = (parkId: string): void => {
-    setSelectedPark(parkId);
-    setShowParkSelector(false);
   };
 
   return (
@@ -793,7 +952,7 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
               <div
                 key={park.id}
                 className="bg-white/10 backdrop-blur-md rounded-lg p-4 cursor-pointer hover:bg-white/20 transition-colors"
-                onClick={() => handleParkSelect(park.id)}
+                onClick={() => handleParkSelect(park.id as ParkId)}
               >
                 {park.imageUrl && (
                   <img
@@ -841,7 +1000,12 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
                 </button>
 
                 <button 
-                  onClick={updateWaitTimes}
+                  onClick={() => {
+                    console.log('Refresh button clicked'); // Debug log
+                    console.log('isLoading:', isLoading); // Debug log
+                    console.log('cooldownTime:', cooldownTime); // Debug log
+                    updateWaitTimes();
+                  }}
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
                   disabled={isLoading || cooldownTime > 0}
                 >
