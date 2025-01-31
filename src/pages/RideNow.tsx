@@ -88,8 +88,8 @@ const PARK_CONFIG: Record<ParkId, ParkQueueTimesConfig> = {
     description: 'Journey through five islands featuring cutting-edge rides and attractions',
     imageUrl: '/assets/ioalogo.png',
     hours: {
-      open: '9:00 AM',
-      close: '7:00 PM'
+      open: 'Check hours at universalorlando.com',
+      close: ''
     },
     lands: [
       "Jurassic Park",
@@ -104,10 +104,10 @@ const PARK_CONFIG: Record<ParkId, ParkQueueTimesConfig> = {
     queueTimesId: '63',
     name: 'Universal Studios Florida',
     description: 'Movie magic comes alive with thrilling attractions and entertainment',
-    imageUrl: '/assets/usflogo.png',
+    imageUrl: '/assets/universalstudioslogo.png',
     hours: {
-      open: '9:00 AM',
-      close: '7:00 PM'
+      open: 'Check hours at universalorlando.com',
+      close: ''
     },
     lands: [
       "Production Central",
@@ -802,7 +802,11 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
     
     setIsLoading(true);
     try {
-      const endpoint = `/api/queue-times/${currentParkConfig.queueTimesId}`;
+      // Get the correct park ID from the config
+      const parkId = currentParkConfig.queueTimesId;
+      console.log(`Fetching queue times for park ${parkId} (${selectedPark})`);
+      
+      const endpoint = `/api/queue-times/${parkId}`;
       console.log('Fetching from:', getApiUrl(endpoint));
       const response = await fetch(getApiUrl(endpoint));
       if (!response.ok) throw new Error('Failed to fetch wait times');
@@ -910,8 +914,17 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       // First update wait times
       await updateWaitTimes();
       
-      const parkRides = selectedPark === 'usf' ? USF_RIDES : RIDES;
       const allRidesWithUpdatedTimes = lands.flatMap(land => land.rides);
+
+      // Check if park is closed (all rides are marked as 'Closed')
+      const isParkClosed = allRidesWithUpdatedTimes.every(ride => ride.waitTime === 'Closed');
+      
+      if (isParkClosed) {
+        setSuggestedRide(null);
+        setRunnerUpRide(null);
+        alert('The park is currently closed. No ride suggestions available.');
+        return;
+      }
 
       // Find best rides using the fresh data
       let bestRide: Ride | null = null;
@@ -920,18 +933,20 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
       let secondBestScore = -1;
 
       allRidesWithUpdatedTimes.forEach(ride => {
+        // Skip closed rides
+        if (ride.waitTime === 'Closed') return;
+        
         const userRating = ride.userRating || 3;
-        if (typeof ride.waitTime === 'number' || ride.waitTime === 'Closed') {
-          const score = calculateRideScore(userRating, ride.waitTime);
-          if (score > bestScore) {
-            runnerUpRide = bestRide;
-            secondBestScore = bestScore;
-            bestScore = score;
-            bestRide = ride;
-          } else if (score > secondBestScore) {
-            secondBestScore = score;
-            runnerUpRide = ride;
-          }
+        const score = calculateRideScore(userRating, ride.waitTime);
+        
+        if (score > bestScore) {
+          runnerUpRide = bestRide;
+          secondBestScore = bestScore;
+          bestScore = score;
+          bestRide = ride;
+        } else if (score > secondBestScore) {
+          secondBestScore = score;
+          runnerUpRide = ride;
         }
       });
 
@@ -987,6 +1002,9 @@ const RideNow: FC<RideNowProps> = ({ userData, onProfileUpdate }): ReactElement 
                   Hours: {PARKS.find(p => p.id === selectedPark)?.hours.open} - {PARKS.find(p => p.id === selectedPark)?.hours.close}
                 </span>
               </div>
+              <p className="text-gray-400 text-xs mt-1">
+                NOTE: Our API provider Queue-Times.com has been having some bugged times recently when the park is closed. As a result, at times there may be strange results for the ride now, but to check if our function is properly calling their service you can check their site for their displayed times.
+              </p>
             </div>
 
             <div className="flex flex-col items-end gap-2">

@@ -1,0 +1,54 @@
+[33me42c163[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Added multipark with fixed queue times
+[33m9a61dfc[m fixed the bug with saving array
+[33mdcfe999[m broken for ingest
+[33m80a922b[m fixed imports for deploy
+[33m7d29a92[m fixed the problem with ride now using non updated data
+[33mde52873[m added height filters and support for safe rides
+[33m70fc1bc[m fixed attributions, added runnerup, improved suggestion refreshes
+[33m4d957ec[m fixed user login page, height only, added support for updating preferences on cards
+[33m75e931f[m Park hours displayed
+[33mdf7bc9e[m Fixed IOA logo
+[33m859c4d5[m added logos
+[33m3159a39[m Commented our log info to save incase debug later
+[33ma008e82[m attempting to fix hardcode stuff
+[33m5cee8f2[m Tester
+[33m8094408[m Refixed dependencies
+[33m544848f[m fixed dependecies
+[33m8880cc4[m fixed href for park selector
+[33mdc968f5[m Added park selection fully functional
+[33m125636a[m Fix park selector to show first and improve UI layout
+[33me0bbe42[m Fixed park selection
+[33ma68ea1f[m Added selection for parks
+[33m1ddc0ba[m laning page changes
+[33m15ea312[m Added our ride now feature
+[33m0b78661[m suggestion
+[33mfc8a71e[m fixing the check wait times
+[33ma2fc79a[m port fix
+[33mce77f92[m fixed proxy
+[33m3948e63[m hardcoding production in authmodal.tsx for handlegooglelogin
+[33m6fcd485[m works in local
+[33m034c87d[m fixed url
+[33m2d4d058[m fixed some dependencies
+[33m4c0eb2d[m Fixed bug with usernames
+[33maa3b8d5[m Added Google, and MongoDB features. Huge update
+[33mef365ff[m Trying a big change for render
+[33m4ef25b4[m fixed gitignore for .env
+[33m94c209e[m Delete .env
+[33m119e9cd[m added a coldown so users dont spam the refresh and bombard their api
+[33m6516b98[m fixed credits on check times
+[33m86da587[m updated all the logos
+[33m1893d91[m new logo added, smaller
+[33m0b94feb[m Updated suggest button to randomize among lowest times to test
+[33mcab2fc2[m Added check wait times feature and tracks all times on the cards
+[33m9145519[m updated ride cards
+[33meed520a[m New Logo!(Went to war with FIGMA
+[33m524eb0a[m Built framework for the frontend using bolt.new free credits. See ReadME for process
+[33m74580ea[m .env added bc private class proj, updated filesnames
+[33m42bca8c[m Updated README with tools used
+[33m16ce6cb[m Preference System
+[33m4107c77[m Create Data_Collection.py
+[33m1896080[m Delete Data_Collection.py
+[33mbbfcc52[m Merge branch 'main' of https://github.com/weblab-class/casey2e-nlevando
+[33md832916[m readme test
+[33mac3e515[m first commit
+[33m2166f0c[m Create Data_Collection.py
